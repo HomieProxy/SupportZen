@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -50,7 +51,7 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-                <Link href="#">Profile</Link>
+                <Link href="/profile">Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/settings">Settings</Link>
