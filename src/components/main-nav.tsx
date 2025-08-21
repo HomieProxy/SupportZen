@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { Home, Ticket, MessageSquare } from "lucide-react";
+import { Home, Ticket, MessageSquare, Settings } from "lucide-react";
 
 const menuItems = [
   {
@@ -25,6 +25,11 @@ const menuItems = [
     label: "Live Chat",
     icon: MessageSquare,
   },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+  }
 ];
 
 export function MainNav() {
@@ -36,7 +41,7 @@ export function MainNav() {
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
-            isActive={pathname === item.href}
+            isActive={pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)}
             tooltip={item.label}
           >
             <Link href={item.href}>
