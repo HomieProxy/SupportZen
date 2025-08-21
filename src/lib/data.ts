@@ -1,3 +1,4 @@
+
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
 import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
 
@@ -180,10 +181,27 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
   return newTicket;
 }
 
+export const addMessageToTicket = (ticketId: string, message: ChatMessage) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if(ticket) {
+        ticket.messages.push(message);
+        ticket.lastUpdate = formatISO(new Date());
+    }
+}
+
+export const updateTicketStatus = (ticketId: string, status: Ticket['status']) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if(ticket) {
+        ticket.status = status;
+        ticket.lastUpdate = formatISO(new Date());
+    }
+}
+
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
 export const getOpenTickets = () => tickets.filter(t => t.status !== 'closed');
+export const getChatSessions = () => chatSessions;
 export const getActiveChats = () => chatSessions.filter(c => c.status === 'active');
 export const getChatById = (id: string) => chatSessions.find(c => c.id === id);
 export const addMessageToChat = (chatId: string, message: ChatMessage) => {

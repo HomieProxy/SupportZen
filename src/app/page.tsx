@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -15,13 +16,15 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getActiveChats, getOpenTickets } from '@/lib/data';
+import { getActiveChats, getOpenTickets, getTickets, getChatSessions } from '@/lib/data';
 import { Ticket } from '@/types';
-import { MessageSquare, Ticket as TicketIcon } from 'lucide-react';
+import { MessageSquare, Ticket as TicketIcon, CheckCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
+  const allTickets = getTickets();
+  const allChats = getChatSessions();
   const activeChats = getActiveChats();
   const openTickets = getOpenTickets();
 
@@ -55,6 +58,42 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+            <TicketIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{allTickets.length}</div>
+            <p className="text-xs text-muted-foreground">
+              All tickets ever created
+            </p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+            <TicketIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{openTickets.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Tickets needing attention
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Chats</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{allChats.length}</div>
+            <p className="text-xs text-muted-foreground">
+              All chat sessions initiated
+            </p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -65,25 +104,13 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-            <TicketIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{openTickets.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Tickets needing your attention
-            </p>
-          </CardContent>
-        </Card>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Recent Tickets</CardTitle>
+            <CardTitle>Recent Open Tickets</CardTitle>
             <CardDescription>
-              A list of the most recently updated tickets.
+              Your most recently updated open and in-progress tickets.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -93,6 +120,7 @@ export default function Dashboard() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead className="text-right">Status</TableHead>
+                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -114,6 +142,11 @@ export default function Dashboard() {
                       <Badge variant={getStatusVariant(ticket.status)} className="capitalize">
                         {ticket.status.replace('-', ' ')}
                       </Badge>
+                    </TableCell>
+                     <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={`/tickets/${ticket.id}`}>View</Link>
+                        </Button>
                     </TableCell>
                   </TableRow>
                 ))}

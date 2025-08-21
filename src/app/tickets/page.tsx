@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -154,7 +155,9 @@ export default function TicketsPage() {
                     })}
                   </TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm">View</Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/tickets/${ticket.id}`}>View</Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
