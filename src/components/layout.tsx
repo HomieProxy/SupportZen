@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SidebarProvider,
   Sidebar,
@@ -15,13 +15,41 @@ import { Icons } from "./icons";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/use-auth";
+import { usePathname, useRouter } from "next/navigation";
+import LoginPage from "@/app/login/page";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { user, loading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   
   // By default, the sidebar is open on desktop and closed on mobile
   const defaultOpen = !isMobile;
+
+  useEffect(() => {
+    if (!loading && !user && pathname !== '/login') {
+      router.push('/login');
+    }
+    if (!loading && user && pathname === '/login') {
+        router.push('/');
+    }
+  }, [user, loading, pathname, router]);
+
+
+  if (loading) {
+    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>;
+  }
+  
+  if (!user && pathname === '/login') {
+    return <LoginPage />;
+  }
+
+  if (!user) {
+    return null; 
+  }
 
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={defaultOpen}>

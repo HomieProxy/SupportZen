@@ -16,8 +16,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+import { useAuth } from "@/hooks/use-auth";
 
 export function UserNav() {
+  const { user, logout } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="flex items-center gap-2">
       <ThemeToggle />
@@ -26,7 +33,7 @@ export function UserNav() {
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarImage src="https://placehold.co/100x100.png" alt="@agent" data-ai-hint="person face" />
-              <AvatarFallback>AZ</AvatarFallback>
+              <AvatarFallback>{user.email.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -35,7 +42,7 @@ export function UserNav() {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">Admin User</p>
               <p className="text-xs leading-none text-muted-foreground">
-                admin@supportzen.com
+                {user.email}
               </p>
             </div>
           </DropdownMenuLabel>
@@ -46,7 +53,7 @@ export function UserNav() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Log out</DropdownMenuItem>
+          <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
