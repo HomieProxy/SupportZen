@@ -1,44 +1,46 @@
-name: Build and Deploy to Docker
+name: Build and Package for Deployment
 
 on:
   push:
     branches:
       - main
 
-env:
-  # Use docker.io for Docker Hub if you prefer
-  REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
-  build-and-push-image:
+  build-and-package:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Build Next.js application
+        run: npm run build
+
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp -r .next deploy/
+          cp -r public deploy/
+          cp -r node_modules deploy/
+          cp package.json deploy/
+          cp next.config.ts deploy/
+          cp Dockerfile deploy/
+          cp docker-compose.yml deploy/
+          
+      - name: Zip the deployment package
+        run: zip -r supportzen-deploy.zip deploy
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
         with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          name: supportzen-deployment-package
+          path: supportzen-deploy.zip
