@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   getActiveChats,
   getChatById,
   addMessageToChat,
+  addTicket,
+  closeChat,
 } from '@/lib/data';
 import { ChatSession, ChatMessage, User } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,7 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Send, Bot, Sparkles, Image as ImageIcon, Briefcase, Calendar, Mail, User as UserIcon, ArrowLeft } from 'lucide-react';
+import { Send, Bot, Sparkles, Image as ImageIcon, Briefcase, Calendar, Mail, User as UserIcon, ArrowLeft, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { suggestResponse } from '@/ai/flows/suggest-response';
 import { createTicketFromChat } from '@/ai/flows/create-ticket-from-chat';
@@ -105,7 +107,7 @@ function CustomerInfo({ user }: { user: User }) {
 }
 
 
-function ChatWindow({ chat }: { chat: ChatSession }) {
+function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id: string) => void }) {
   const [newMessage, setNewMessage] = useState('');
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const [suggestedResponse, setSuggestedResponse] = useState<string | null>(null);
@@ -177,24 +179,45 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
             .map(m => `${m.sender}: ${m.content}`)
             .join('\n');
 
-        const result = await createTicketFromChat({
+        const aiResult = await createTicketFromChat({
             conversationText,
             customerEmail: customer.email,
             customerPlanId: customer.planId,
             customerExpiredAt: customer.expiredAt,
             customerUuid: customer.uuid
         });
+
+        const newTicket = addTicket({
+          subject: aiResult.summary,
+          customer: customer,
+          status: 'open',
+          messages: chat.messages
+        });
+
         toast({
             title: "Ticket Created",
-            description: `Ticket ${result.ticketId} created with summary: ${result.summary}`
+            description: `Ticket ${newTicket.id} created successfully.`,
         });
+
+        onChatClose(chat.id);
+
       } catch(e) {
+        console.error(e);
         toast({
             variant: "destructive",
             title: "Error creating ticket",
             description: "Could not create a ticket from this conversation."
         })
       }
+  }
+
+  const handleCloseChat = () => {
+    closeChat(chat.id);
+    onChatClose(chat.id);
+    toast({
+      title: "Chat Closed",
+      description: `The conversation with ${chat.customer.name} has been closed.`
+    });
   }
 
   const handleOpenAnnotator = (url: string) => {
@@ -219,6 +242,7 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
         <h3 className="font-semibold text-lg font-headline">{chat.customer.name}</h3>
         <div className="flex items-center gap-4">
             <Button onClick={handleCreateTicket} variant="outline" size="sm">Create Ticket</Button>
+            <Button onClick={handleCloseChat} variant="destructive" size="sm"><X className="mr-2 h-4 w-4"/>Close Chat</Button>
             <div className="flex items-center space-x-2">
                 <Switch id="ai-mode" checked={isAiEnabled} onCheckedChange={setIsAiEnabled} />
                 <Label htmlFor="ai-mode" className="flex items-center gap-1">
@@ -328,18 +352,22 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
 }
 
 export default function ChatPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const chats = useMemo(() => getActiveChats(), []);
+  const [allChats, setAllChats] = useState(() => getActiveChats());
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   useEffect(() => {
     const chatIdFromUrl = searchParams.get('id');
-    if (chatIdFromUrl) {
+    if (chatIdFromUrl && allChats.find(c => c.id === chatIdFromUrl)) {
       setSelectedChatId(chatIdFromUrl);
-    } else if (chats.length > 0) {
-      setSelectedChatId(chats[0].id);
+    } else if (allChats.length > 0) {
+      setSelectedChatId(allChats[0].id);
+      router.replace(`/chat?id=${allChats[0].id}`);
+    } else {
+      setSelectedChatId(null);
     }
-  }, [searchParams, chats]);
+  }, [searchParams, allChats, router]);
 
   const selectedChat = useMemo(
     () => (selectedChatId ? getChatById(selectedChatId) : null),
@@ -348,21 +376,39 @@ export default function ChatPage() {
   
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    // Update URL without reloading page
     window.history.pushState(null, '', `/chat?id=${id}`);
   }
+
+  const handleChatClose = (closedChatId: string) => {
+    // Refetch the list of active chats
+    const updatedChats = getActiveChats();
+    setAllChats(updatedChats);
+
+    // If the closed chat was the selected one, select the next available one
+    if (selectedChatId === closedChatId) {
+      if (updatedChats.length > 0) {
+        const newSelectedId = updatedChats[0].id;
+        setSelectedChatId(newSelectedId);
+        router.replace(`/chat?id=${newSelectedId}`);
+      } else {
+        setSelectedChatId(null);
+        router.replace('/chat');
+      }
+    }
+  };
+
 
   return (
     <div className="flex h-[calc(100vh-60px)]">
       <ChatList
-        chats={chats}
+        chats={allChats}
         selectedChatId={selectedChatId}
         onSelectChat={handleSelectChat}
       />
       <Separator orientation="vertical" />
       <div className="flex-1 p-4">
         {selectedChat ? (
-          <ChatWindow chat={selectedChat} />
+          <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
         ) : (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">Select a conversation to start chatting</p>

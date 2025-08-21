@@ -181,6 +181,18 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
   return newTicket;
 }
 
+export const addTicket = (ticket: Omit<Ticket, 'id' | 'createdAt' | 'lastUpdate'>): Ticket => {
+    const now = new Date();
+    const newTicket: Ticket = {
+        ...ticket,
+        id: `TKT-${String(tickets.length + 1).padStart(3, '0')}`,
+        createdAt: formatISO(now),
+        lastUpdate: formatISO(now),
+    };
+    tickets.unshift(newTicket);
+    return newTicket;
+}
+
 export const addMessageToTicket = (ticketId: string, message: ChatMessage) => {
     const ticket = tickets.find(t => t.id === ticketId);
     if(ticket) {
@@ -210,6 +222,14 @@ export const addMessageToChat = (chatId: string, message: ChatMessage) => {
         chat.messages.push(message);
     }
 }
+
+export const closeChat = (chatId: string) => {
+    const chat = chatSessions.find(c => c.id === chatId);
+    if (chat) {
+        chat.status = 'closed';
+    }
+}
+
 export const clearClosedData = (cutoffDate: Date) => {
     const originalTicketCount = tickets.length;
     
