@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getActiveChats, getOpenTickets, getTickets, getChatSessions } from '@/lib/data';
 import { Ticket } from '@/types';
-import { MessageSquare, Ticket as TicketIcon, CheckCircle, Users } from 'lucide-react';
+import { MessageSquare, Ticket as TicketIcon, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -56,30 +56,34 @@ export default function Dashboard() {
         Dashboard
       </h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <TicketIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{allTickets.length}</div>
-            <p className="text-xs text-muted-foreground">
-              All tickets ever created
-            </p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-            <TicketIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{openTickets.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Tickets needing attention
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/tickets">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+              <TicketIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{allTickets.length}</div>
+              <p className="text-xs text-muted-foreground">
+                All tickets ever created
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+         <Link href="/tickets">
+            <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+                <TicketIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{openTickets.length}</div>
+                <p className="text-xs text-muted-foreground">
+                Tickets needing attention
+                </p>
+            </CardContent>
+            </Card>
+        </Link>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Chats</CardTitle>
