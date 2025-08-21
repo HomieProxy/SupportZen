@@ -1,5 +1,5 @@
-import { User, Ticket, ChatSession, ChatMessage } from '@/types';
-import { subDays, formatISO } from 'date-fns';
+import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
+import { subDays, formatISO, fromUnixTime, format } from 'date-fns';
 
 const users: User[] = [
   {
@@ -106,6 +106,36 @@ const chatSessions: ChatSession[] = [
     ],
   }
 ];
+
+export const updateOrAddUser = (payload: ClientWebhookPayload) => {
+  const existingUserIndex = users.findIndex(u => u.uuid === payload.uuid);
+
+  const formattedUser = {
+    uuid: payload.uuid,
+    email: payload.email,
+    planId: payload.plan_id ? String(payload.plan_id) : 'N/A',
+    expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
+  };
+
+  if (existingUserIndex > -1) {
+    // Update existing user
+    const existingUser = users[existingUserIndex];
+    users[existingUserIndex] = {
+      ...existingUser,
+      ...formattedUser,
+    };
+    console.log('Updated user:', users[existingUserIndex]);
+  } else {
+    // Add new user
+    const newUser: User = {
+      ...formattedUser,
+      name: payload.email.split('@')[0], // Create a name from email
+      avatarUrl: `https://placehold.co/100x100.png`, // Generic placeholder
+    };
+    users.push(newUser);
+    console.log('Added new user:', newUser);
+  }
+};
 
 
 export const getTickets = () => tickets;
