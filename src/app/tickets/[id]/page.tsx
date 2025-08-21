@@ -107,9 +107,9 @@ function TicketConversation({ ticket, onStatusChange, onNewMessage }: { ticket: 
             <CardDescription className="mt-2">Ticket ID: {ticket.id} &middot; Created on {format(new Date(ticket.createdAt), "PPP")}</CardDescription>
         </div>
         <div className="flex gap-2">
-            {ticket.status !== 'in-progress' && <Button size="sm" variant="outline" onClick={() => onStatusChange('in-progress')}>Mark as In Progress</Button>}
-            {ticket.status !== 'closed' && <Button size="sm" variant="destructive" onClick={() => onStatusChange('closed')}><X className="mr-2" /> Close Ticket</Button>}
-            {ticket.status === 'closed' && <Button size="sm" onClick={() => onStatusChange('open')}><Check className="mr-2" /> Re-open Ticket</Button>}
+            {ticket.status === 'open' && <Button size="sm" variant="outline" onClick={() => onStatusChange('in-progress')}>Mark as In Progress</Button>}
+            {ticket.status !== 'closed' && <Button size="sm" variant="destructive" onClick={() => onStatusChange('closed')}><X className="mr-2 h-4 w-4" /> Close Ticket</Button>}
+            {ticket.status === 'closed' && <Button size="sm" onClick={() => onStatusChange('open')}><Check className="mr-2 h-4 w-4" /> Re-open Ticket</Button>}
         </div>
       </CardHeader>
       <div className="flex-1 flex flex-col overflow-hidden">

@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -21,12 +23,29 @@ import { Ticket } from '@/types';
 import { MessageSquare, Ticket as TicketIcon, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
-  const allTickets = getTickets();
-  const allChats = getChatSessions();
-  const activeChats = getActiveChats();
-  const openTickets = getOpenTickets();
+  // We need to use state to ensure the dashboard re-renders when data changes.
+  const [allTickets, setAllTickets] = useState(getTickets());
+  const [allChats, setAllChats] = useState(getChatSessions());
+  const [activeChats, setActiveChats] = useState(getActiveChats());
+  const [openTickets, setOpenTickets] = useState(getOpenTickets());
+  
+  // This effect will re-fetch data if the user navigates away and back,
+  // ensuring the dashboard is up-to-date. A more robust solution might
+  // use a global state manager.
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setActiveChats(getActiveChats());
+        setOpenTickets(getOpenTickets());
+        setAllTickets(getTickets());
+        setAllChats(getChatSessions());
+    }, 1000); // Check for updates every second
+    return () => clearInterval(interval);
+  }, []);
+
 
   const recentTickets = openTickets.slice(0, 5);
 
