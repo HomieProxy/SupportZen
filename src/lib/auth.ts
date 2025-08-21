@@ -16,7 +16,7 @@ export async function login(email: string, password: string) {
             throw new Error(result.message || 'Invalid email or password.');
         }
 
-        if (result.data.is_admin !== 1) {
+        if (result.data.is_admin !== true) {
             throw new Error('Access denied. This application is for administrators only.');
         }
 
