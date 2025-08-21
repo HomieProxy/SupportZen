@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTickets } from '@/lib/data';
 import { Ticket } from '@/types';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -108,6 +108,7 @@ export default function TicketsPage() {
               <TableHead>Status</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Subject</TableHead>
+              <TableHead>Created</TableHead>
               <TableHead>Last Update</TableHead>
               <TableHead></TableHead>
             </TableRow>
@@ -141,6 +142,12 @@ export default function TicketsPage() {
                         <span className="text-xs text-muted-foreground">{ticket.id}</span>
                     </div>
                     </TableCell>
+                   <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{format(new Date(ticket.createdAt), 'PP')}</span>
+                      <span className="text-xs text-muted-foreground">{format(new Date(ticket.createdAt), 'p')}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {formatDistanceToNow(new Date(ticket.lastUpdate), {
                       addSuffix: true,
@@ -153,7 +160,7 @@ export default function TicketsPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No tickets found.
                 </TableCell>
               </TableRow>

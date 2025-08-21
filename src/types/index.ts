@@ -12,6 +12,7 @@ export interface Ticket {
   subject: string;
   customer: User;
   status: 'open' | 'in-progress' | 'closed';
+  createdAt: string;
   lastUpdate: string;
   messages: ChatMessage[];
 }

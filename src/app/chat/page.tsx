@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ImageAnnotator } from '@/components/image-annotator';
+import { format, formatDistanceToNow } from 'date-fns';
 
 function ChatList({
   chats,
@@ -200,6 +201,17 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
     setAnnotatedImage(url);
     setIsModalOpen(true);
   }
+  
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (now.getTime() - date.getTime() < oneDay) {
+        return format(date, 'p');
+    }
+    return format(date, 'PP p');
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-card rounded-lg">
@@ -234,7 +246,7 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
                 )}
                 <div
                   className={cn(
-                    'rounded-lg px-3 py-2 max-w-sm',
+                    'rounded-lg px-3 py-2 max-w-sm group',
                     message.sender === 'agent'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
@@ -246,6 +258,10 @@ function ChatWindow({ chat }: { chat: ChatSession }) {
                         <img src={message.attachment.url} alt="attachment" className="rounded-md max-w-xs cursor-pointer" data-ai-hint="receipt document" />
                     </button>
                   )}
+                  <div className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1"
+                       style={{color: message.sender === 'agent' ? 'hsl(var(--primary-foreground) / 0.7)' : 'hsl(var(--muted-foreground))'}}>
+                       {formatTimestamp(message.timestamp)}
+                  </div>
                 </div>
               </div>
             ))}

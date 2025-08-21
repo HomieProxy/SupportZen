@@ -42,6 +42,7 @@ let tickets: Ticket[] = [
     subject: 'Cannot login to my account',
     customer: users[0],
     status: 'open',
+    createdAt: formatISO(subDays(new Date(), 1)),
     lastUpdate: formatISO(subDays(new Date(), 1)),
     messages: [
       { id: 'msg-t1-1', sender: 'customer', content: 'I am unable to log into my account. It says "Invalid credentials" but I am sure my password is correct.', timestamp: formatISO(subDays(new Date(), 1)) },
@@ -53,6 +54,7 @@ let tickets: Ticket[] = [
     subject: 'Billing issue with last invoice',
     customer: users[1],
     status: 'in-progress',
+    createdAt: formatISO(subDays(new Date(), 2)),
     lastUpdate: formatISO(subDays(new Date(), 2)),
     messages: [
       { id: 'msg-t2-1', sender: 'customer', content: 'I was overcharged on my last invoice. Can you please check?', timestamp: formatISO(subDays(new Date(), 2)) },
@@ -63,7 +65,8 @@ let tickets: Ticket[] = [
     subject: 'Feature request: Dark mode',
     customer: users[2],
     status: 'closed',
-    lastUpdate: formatISO(subDays(new Date(), 10)),
+    createdAt: formatISO(subDays(new Date(), 10)),
+    lastUpdate: formatISO(subDays(new Date(), 9)),
     messages: [
         { id: 'msg-t3-1', sender: 'customer', content: 'It would be great if you could add a dark mode to the app.', timestamp: formatISO(subDays(new Date(), 10)) },
         { id: 'msg-t3-2', sender: 'agent', content: 'Thank you for your suggestion! We have added it to our product roadmap.', timestamp: formatISO(subDays(new Date(), 9)) }
@@ -74,6 +77,7 @@ let tickets: Ticket[] = [
     subject: 'App crashing on startup',
     customer: users[3],
     status: 'open',
+    createdAt: formatISO(subDays(new Date(), 0)),
     lastUpdate: formatISO(subDays(new Date(), 0)),
     messages: [
         { id: 'msg-t4-1', sender: 'customer', content: 'My app crashes every time I open it on my new phone. Here is a screenshot of the error.', timestamp: formatISO(subDays(new Date(), 0)), attachment: { type: 'image', url: 'https://placehold.co/600x400.png' } },
@@ -166,6 +170,7 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
     customer: customer,
     subject: payload.message.substring(0, 50) + '...', // Use first 50 chars of message as subject
     status: 'open',
+    createdAt: formatISO(now),
     lastUpdate: formatISO(now),
     messages: [newMessage],
   };
