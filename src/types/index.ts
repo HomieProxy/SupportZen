@@ -31,6 +31,7 @@ export interface ChatSession {
   id: string;
   customer: User;
   messages: ChatMessage[];
+  status: 'active' | 'closed';
 }
 
 // Type for the incoming data from the client webhook

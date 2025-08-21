@@ -19,6 +19,11 @@ export async function login(email: string, password: string) {
         if (result.data.is_admin !== true) {
             throw new Error('Access denied. This application is for administrators only.');
         }
+        
+        // This is a client-side only operation for now.
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('gemini_api_key', result.data.gemini_api_key);
+        }
 
         return {
             email: email,

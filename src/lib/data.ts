@@ -1,5 +1,5 @@
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
-import { subDays, formatISO, fromUnixTime, format } from 'date-fns';
+import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
 
 const users: User[] = [
   {
@@ -81,7 +81,7 @@ let tickets: Ticket[] = [
   }
 ];
 
-const chatSessions: ChatSession[] = [
+let chatSessions: ChatSession[] = [
   {
     id: 'CHAT-001',
     customer: users[0],
@@ -89,6 +89,7 @@ const chatSessions: ChatSession[] = [
       { id: 'msg-c1-1', sender: 'customer', content: 'Hi, I need help upgrading my plan.', timestamp: formatISO(new Date()) },
       { id: 'msg-c1-2', sender: 'agent', content: 'Hello Alice! I can certainly help with that. Which plan are you interested in?', timestamp: formatISO(new Date()) },
     ],
+    status: 'active',
   },
   {
     id: 'CHAT-002',
@@ -96,6 +97,7 @@ const chatSessions: ChatSession[] = [
     messages: [
       { id: 'msg-c2-1', sender: 'customer', content: 'My file upload is not working.', timestamp: formatISO(new Date()) },
     ],
+    status: 'active',
   },
   {
     id: 'CHAT-003',
@@ -104,6 +106,7 @@ const chatSessions: ChatSession[] = [
       { id: 'msg-c3-1', sender: 'customer', content: 'Can you show me how to use the new analytics feature?', timestamp: formatISO(new Date()) },
       { id: 'msg-c3-2', sender: 'customer', content: 'I have attached a screenshot of what I am seeing.', timestamp: formatISO(new Date()), attachment: { type: 'image', url: 'https://placehold.co/600x400.png' }},
     ],
+    status: 'active',
   }
 ];
 
@@ -176,7 +179,7 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
 export const getOpenTickets = () => tickets.filter(t => t.status !== 'closed');
-export const getActiveChats = () => chatSessions;
+export const getActiveChats = () => chatSessions.filter(c => c.status === 'active');
 export const getChatById = (id: string) => chatSessions.find(c => c.id === id);
 export const addMessageToChat = (chatId: string, message: ChatMessage) => {
     const chat = chatSessions.find(c => c.id === chatId);
@@ -184,3 +187,34 @@ export const addMessageToChat = (chatId: string, message: ChatMessage) => {
         chat.messages.push(message);
     }
 }
+export const clearClosedData = (cutoffDate: Date) => {
+    const originalTicketCount = tickets.length;
+    
+    // In a real app, you might "close" a chat session.
+    // For this mock data, we'll assume any chat that hasn't had a message
+    // in 2 days is "closed" for purging purposes.
+    const twoDaysAgo = subDays(new Date(), 2);
+    chatSessions.forEach(chat => {
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        if (lastMessage && isBefore(new Date(lastMessage.timestamp), twoDaysAgo)) {
+            chat.status = 'closed';
+        }
+    });
+
+    tickets = tickets.filter(ticket => {
+        if (ticket.status !== 'closed') return true;
+        return !isBefore(new Date(ticket.lastUpdate), cutoffDate);
+    });
+
+    const closedChatsPurged = chatSessions.filter(chat => {
+        if (chat.status !== 'closed') return true;
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        if (!lastMessage) return true; // Keep empty chats?
+        return !isBefore(new Date(lastMessage.timestamp), cutoffDate);
+    });
+
+    console.log(`Purged ${originalTicketCount - tickets.length} closed tickets.`);
+    console.log(`Purged ${chatSessions.length - closedChatsPurged.length} closed chats.`);
+    
+    chatSessions = closedChatsPurged;
+};
