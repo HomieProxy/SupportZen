@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   getActiveChats,
@@ -22,7 +23,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Send, Bot, Sparkles, Image as ImageIcon, Briefcase, Calendar, Mail, User as UserIcon } from 'lucide-react';
+import { Send, Bot, Sparkles, Image as ImageIcon, Briefcase, Calendar, Mail, User as UserIcon, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { suggestResponse } from '@/ai/flows/suggest-response';
 import { createTicketFromChat } from '@/ai/flows/create-ticket-from-chat';
@@ -48,8 +49,14 @@ function ChatList({
 
   return (
     <Card className="w-full md:w-1/3 lg:w-1/4 h-full flex flex-col">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="font-headline">Conversations</CardTitle>
+        <Button asChild variant="outline" size="icon" className="h-8 w-8">
+            <Link href="/">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back to Home</span>
+            </Link>
+        </Button>
       </CardHeader>
       <ScrollArea className="flex-1">
         {chats.map((chat) => (
