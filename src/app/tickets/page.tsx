@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { ListFilter } from 'lucide-react';
+import { ListFilter, ArrowLeft } from 'lucide-react';
 
 type Status = Ticket['status'] | 'all';
 
@@ -68,6 +69,12 @@ export default function TicketsPage() {
         <h2 className="text-3xl font-bold tracking-tight font-headline">
           Tickets ({filteredTickets.length})
         </h2>
+        <Button asChild variant="outline">
+            <Link href="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+            </Link>
+        </Button>
       </div>
       <div className="border rounded-lg">
         <div className="p-4 flex flex-col md:flex-row items-center gap-4">
