@@ -24,7 +24,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Send, Bot, Sparkles, Image as ImageIcon, Briefcase, Calendar, Mail, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { suggestResponse, createTicketFromChat } from '@/ai/flows';
+import { suggestResponse } from '@/ai/flows/suggest-response';
+import { createTicketFromChat } from '@/ai/flows/create-ticket-from-chat';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
