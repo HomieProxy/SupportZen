@@ -186,14 +186,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
   // Use a state variable to force re-renders when data changes
   const [ticketState, setTicketState] = useState(getTicketById(params.id));
   const { toast } = useToast();
-
-  useEffect(() => {
-    // This effect ensures that if the ID changes, we fetch the new ticket data.
-    // This is not strictly necessary with the current app structure but is good practice.
-    setTicketState(getTicketById(params.id));
-  }, [params.id]);
-
-
+  
   if (!ticketState) {
     return notFound();
   }
@@ -201,7 +194,10 @@ export default function TicketPage({ params }: { params: { id: string } }) {
   const handleStatusChange = (status: Ticket['status']) => {
     updateTicketStatus(ticketState.id, status);
     // Create a new object to trigger a state update
-    setTicketState({ ...getTicketById(params.id)! });
+    const updatedTicket = getTicketById(params.id);
+    if (updatedTicket) {
+      setTicketState({ ...updatedTicket });
+    }
     toast({
         title: "Ticket Status Updated",
         description: `Ticket has been marked as ${status.replace('-', ' ')}.`
