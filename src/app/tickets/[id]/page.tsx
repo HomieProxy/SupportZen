@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { getTicketById, addMessageToTicket, updateTicketStatus } from '@/lib/data';
 import { Ticket, ChatMessage, User } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,7 +46,7 @@ function CustomerInfo({ user }: { user: User }) {
   );
 }
 
-function TicketConversation({ ticket, onStatusChange }: { ticket: Ticket, onStatusChange: (status: Ticket['status']) => void }) {
+function TicketConversation({ ticket, onStatusChange, onNewMessage }: { ticket: Ticket, onStatusChange: (status: Ticket['status']) => void, onNewMessage: () => void }) {
   const [newMessage, setNewMessage] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [annotatedImage, setAnnotatedImage] = useState<string | null>(null);
@@ -69,6 +69,7 @@ function TicketConversation({ ticket, onStatusChange }: { ticket: Ticket, onStat
     };
     addMessageToTicket(ticket.id, message);
     setNewMessage('');
+    onNewMessage();
   };
 
   const getStatusVariant = (status: Ticket['status']) => {
@@ -182,26 +183,32 @@ function TicketConversation({ ticket, onStatusChange }: { ticket: Ticket, onStat
   );
 }
 
-export default function TicketPage({ params }: { params: { id: string } }) {
-  // Use a state variable to force re-renders when data changes
-  const [ticketState, setTicketState] = useState(getTicketById(params.id));
+export default function TicketPage() {
+  const params = useParams();
+  const ticketId = params.id as string;
+  
+  // Use a key for the TicketConversation component to force a re-render
+  // when we manually update the data.
+  const [renderKey, setRenderKey] = useState(Date.now());
   const { toast } = useToast();
   
+  const ticketState = getTicketById(ticketId);
+
   if (!ticketState) {
     return notFound();
   }
+  
+  const forceRerender = () => {
+    setRenderKey(Date.now());
+  };
 
   const handleStatusChange = (status: Ticket['status']) => {
-    updateTicketStatus(ticketState.id, status);
-    // Create a new object to trigger a state update
-    const updatedTicket = getTicketById(params.id);
-    if (updatedTicket) {
-      setTicketState({ ...updatedTicket });
-    }
+    updateTicketStatus(ticketId, status);
     toast({
         title: "Ticket Status Updated",
         description: `Ticket has been marked as ${status.replace('-', ' ')}.`
-    })
+    });
+    forceRerender();
   }
 
   return (
@@ -216,7 +223,12 @@ export default function TicketPage({ params }: { params: { id: string } }) {
       </div>
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 h-[calc(100%-60px)]">
         <div className="md:col-span-2 lg:col-span-3 h-full">
-          <TicketConversation ticket={ticketState} onStatusChange={handleStatusChange} />
+          <TicketConversation 
+            key={renderKey} 
+            ticket={ticketState} 
+            onStatusChange={handleStatusChange} 
+            onNewMessage={forceRerender} 
+          />
         </div>
         <div className="lg:col-span-1 h-full">
           <CustomerInfo user={ticketState.customer} />
