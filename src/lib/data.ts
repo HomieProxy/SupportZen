@@ -36,7 +36,7 @@ const users: User[] = [
   },
 ];
 
-const tickets: Ticket[] = [
+let tickets: Ticket[] = [
   {
     id: 'TKT-001',
     subject: 'Cannot login to my account',
@@ -107,35 +107,70 @@ const chatSessions: ChatSession[] = [
   }
 ];
 
-export const updateOrAddUser = (payload: ClientWebhookPayload) => {
-  const existingUserIndex = users.findIndex(u => u.uuid === payload.uuid);
+const findOrAddUser = (payload: ClientWebhookPayload): User => {
+  let user = users.find(u => u.uuid === payload.uuid);
 
-  const formattedUser = {
-    uuid: payload.uuid,
-    email: payload.email,
-    planId: payload.plan_id ? String(payload.plan_id) : 'N/A',
-    expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
-  };
-
-  if (existingUserIndex > -1) {
-    // Update existing user
-    const existingUser = users[existingUserIndex];
-    users[existingUserIndex] = {
-      ...existingUser,
-      ...formattedUser,
-    };
-    console.log('Updated user:', users[existingUserIndex]);
+  if (user) {
+    // Update existing user's details if they have changed
+    user.email = payload.email;
+    user.planId = payload.plan_id ? String(payload.plan_id) : 'N/A';
+    user.expiredAt = payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A';
   } else {
     // Add new user
     const newUser: User = {
-      ...formattedUser,
+      uuid: payload.uuid,
+      email: payload.email,
+      planId: payload.plan_id ? String(payload.plan_id) : 'N/A',
+      expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
       name: payload.email.split('@')[0], // Create a name from email
       avatarUrl: `https://placehold.co/100x100.png`, // Generic placeholder
     };
     users.push(newUser);
-    console.log('Added new user:', newUser);
+    user = newUser;
   }
-};
+  return user;
+}
+
+export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): Ticket => {
+  const customer = findOrAddUser(payload);
+  const now = new Date();
+
+  const newMessage: ChatMessage = {
+    id: `msg-${now.getTime()}`,
+    sender: 'customer',
+    content: payload.message,
+    timestamp: formatISO(now),
+    ...(payload.image_url && { attachment: { type: 'image', url: payload.image_url }})
+  };
+  
+  if (payload.ticket_id) {
+    const existingTicket = tickets.find(t => t.id === payload.ticket_id);
+    if(existingTicket) {
+      existingTicket.messages.push(newMessage);
+      existingTicket.lastUpdate = formatISO(now);
+      if (existingTicket.status === 'closed') {
+        existingTicket.status = 'open';
+      }
+      console.log('Updated ticket:', existingTicket.id);
+      return existingTicket;
+    }
+  }
+
+  // If no ticket_id is provided, or the provided one doesn't exist, create a new ticket.
+  const newTicketId = `TKT-${String(tickets.length + 1).padStart(3, '0')}`;
+  const newTicket: Ticket = {
+    id: newTicketId,
+    customer: customer,
+    subject: payload.message.substring(0, 50) + '...', // Use first 50 chars of message as subject
+    status: 'open',
+    lastUpdate: formatISO(now),
+    messages: [newMessage],
+  };
+
+  tickets.push(newTicket);
+  console.log('Created new ticket:', newTicket.id);
+  return newTicket;
+}
 
 
 export const getTickets = () => tickets;

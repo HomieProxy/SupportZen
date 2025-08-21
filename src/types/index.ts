@@ -35,11 +35,17 @@ export interface ChatSession {
 
 // Type for the incoming data from the client webhook
 export interface ClientWebhookPayload {
+  // User information
+  uuid: string;
   email: string;
   last_login_at?: number | null;
   created_at: number;
   expired_at?: number | null;
   plan_id?: number | string | null;
   telegram_id?: number | null;
-  uuid: string;
+
+  // Support request information
+  message: string;
+  image_url?: string;
+  ticket_id?: string; // Optional: to append to an existing ticket
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { updateOrAddUser } from '@/lib/data';
+import { createOrUpdateTicketFromWebhook } from '@/lib/data';
 import { ClientWebhookPayload } from '@/types';
 
 export async function POST(request: Request) {
@@ -11,22 +11,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid payload structure' }, { status: 400 });
     }
 
-    const userData: ClientWebhookPayload = body.data;
+    const payload: ClientWebhookPayload = body.data;
 
     // Here you can add more robust validation of userData if needed
-    if (!userData.uuid || !userData.email) {
-        return NextResponse.json({ error: 'Missing required fields in data object' }, { status: 400 });
+    if (!payload.uuid || !payload.email || !payload.message) {
+        return NextResponse.json({ error: 'Missing required fields (uuid, email, message) in data object' }, { status: 400 });
     }
 
-    // This function will update an existing user or add a new one
-    // In a real app, this would interact with your database.
-    // For this demo, it updates the in-memory data array.
-    updateOrAddUser(userData);
+    // This function will create a new ticket or update an existing one
+    const result = createOrUpdateTicketFromWebhook(payload);
     
-    return NextResponse.json({ message: 'User data received successfully.' });
+    return NextResponse.json({ message: 'Webhook received successfully.', ticketId: result.id });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Webhook processing error:', error);
-    return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process webhook', details: errorMessage }, { status: 500 });
   }
 }
