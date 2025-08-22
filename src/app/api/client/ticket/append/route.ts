@@ -1,5 +1,4 @@
 
-'use server';
 import { NextResponse } from 'next/server';
 import { addMessageToTicketByCustomer, getTicketById } from '@/lib/data';
 import { validateHmac } from '@/lib/auth';

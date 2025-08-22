@@ -1,5 +1,4 @@
 
-'use server';
 import { NextResponse } from 'next/server';
 import { createChatFromWebhook } from '@/lib/data';
 import type { ClientWebhookPayload } from '@/types';
