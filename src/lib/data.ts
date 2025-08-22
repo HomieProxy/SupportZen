@@ -1,25 +1,30 @@
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
 import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
+import { randomUUID } from 'crypto';
 
 let users: User[] = [];
 let tickets: Ticket[] = [];
 let chatSessions: ChatSession[] = [];
 
-const findOrAddUser = (payload: {uuid: string, email: string, plan_id?: any, expired_at?: number | null}): User => {
-  let user = users.find(u => u.uuid === payload.uuid);
+const findOrAddUser = (payload: ClientWebhookPayload): User => {
+  let user = users.find(u => u.email === payload.email);
 
   if (user) {
-    user.email = payload.email;
-    user.planId = payload.plan_id ? String(payload.plan_id) : 'N/A';
-    user.expiredAt = payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A';
+    // Update user details if they've changed
+    user.name = payload.name || user.name;
+    user.planId = payload.plan_id ? String(payload.plan_id) : user.planId;
+    user.expiredAt = payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : user.expiredAt;
   } else {
+    // Create a new user if they don't exist
+    const newUUID = randomUUID();
     const newUser: User = {
-      uuid: payload.uuid,
+      uuid: newUUID,
       email: payload.email,
+      name: payload.name || payload.email.split('@')[0], 
+      avatarUrl: `https://placehold.co/100x100.png`,
       planId: payload.plan_id ? String(payload.plan_id) : 'N/A',
       expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
-      name: payload.email.split('@')[0], 
-      avatarUrl: `https://placehold.co/100x100.png`,
+      createdAt: payload.created_at ? formatISO(fromUnixTime(payload.created_at)) : formatISO(new Date()),
     };
     users.push(newUser);
     user = newUser;
@@ -39,7 +44,7 @@ export const createChatFromWebhook = (payload: ClientWebhookPayload): ChatSessio
     ...(payload.image_url && { attachment: { type: 'image', url: payload.image_url }})
   };
 
-  const newChatId = `chat-${chatSessions.length + 1}`;
+  const newChatId = `chat-session-${randomUUID()}`;
   const newChatSession: ChatSession = {
     id: newChatId,
     customer: customer,
@@ -133,6 +138,7 @@ export const updateTicketStatus = (ticketId: string, status: Ticket['status']) =
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
+export const getUserByEmail = (email: string) => users.find(u => u.email === email);
 export const getOpenTickets = () => tickets.filter(t => t.status !== 'closed');
 export const getChatSessions = () => chatSessions;
 export const getActiveChats = () => chatSessions.filter(c => c.status === 'active');

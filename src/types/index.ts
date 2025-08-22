@@ -5,6 +5,7 @@ export interface User {
   avatarUrl: string;
   planId: string;
   expiredAt: string;
+  createdAt: string;
 }
 
 export interface Ticket {
@@ -38,14 +39,13 @@ export interface ChatSession {
 // Type for the incoming data from the client webhook
 export interface ClientWebhookPayload {
   // User information
-  uuid: string;
+  uuid?: string; // Optional on create, as it will be generated
   email: string;
-  last_login_at?: number | null;
+  name?: string;
   created_at: number;
   expired_at?: number | null;
   plan_id?: number | string | null;
-  telegram_id?: number | null;
-
+  
   // Support request information
   message: string;
   image_url?: string;

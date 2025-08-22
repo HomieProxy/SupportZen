@@ -1,6 +1,7 @@
 'use server';
 import { NextResponse } from 'next/server';
 import { addMessageToTicketByCustomer } from '@/lib/data';
+import { validateApiKey } from '@/lib/auth';
 
 interface AppendTicketPayload {
     ticket_id: string;
@@ -8,16 +9,8 @@ interface AppendTicketPayload {
     image_url?: string;
 }
 
-// This is a simplified secret key check. 
-// In a real-world scenario, use a more secure method like rotating tokens and store the secret in an environment variable.
-const validateApiKey = (request: Request): boolean => {
-    const authHeader = request.headers.get('Authorization');
-    const expectedApiKey = `Bearer ${process.env.CLIENT_API_SECRET || 'your-default-secret-key'}`;
-    return authHeader === expectedApiKey;
-}
-
 export async function POST(request: Request) {
-  if (!validateApiKey(request)) {
+  if (!(await validateApiKey(request))) {
     return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid API Key' }, { status: 401 });
   }
 

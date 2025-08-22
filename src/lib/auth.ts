@@ -1,4 +1,6 @@
 'use server';
+import { getUserByEmail } from './data';
+import crypto from 'crypto';
 
 export async function login(email: string, password: string) {
     try {
@@ -44,3 +46,44 @@ export async function logout() {
     // For now, it's a placeholder as the client handles state removal
     return Promise.resolve();
 }
+
+// In a real-world scenario, the secret key would be stored securely in an environment variable.
+const getSharedSecret = (): string => {
+    return process.env.CLIENT_API_SECRET || 'your-default-secret-key';
+}
+
+export async function validateApiKey(request: Request): Promise<boolean> {
+    const authHeader = request.headers.get('Authorization');
+    const expectedApiKey = `Bearer ${getSharedSecret()}`;
+    return authHeader === expectedApiKey;
+};
+
+export const validateHmac = async (request: Request, email: string): Promise<boolean> => {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return false;
+    }
+    
+    const clientHash = authHeader.split(' ')[1];
+    if (!clientHash) {
+        return false;
+    }
+    
+    const user = getUserByEmail(email);
+    // If the user doesn't exist, we can't verify the hash.
+    // The request to /api/client/live/create will proceed to create a new user.
+    if (!user) {
+        // For new users, we can't validate, so we assume it's their first contact.
+        // A more secure system might have a separate pre-registration step.
+        return true; 
+    }
+
+    try {
+        const secret = user.uuid;
+        const generatedHash = crypto.createHmac('sha256', secret).update(email).digest('hex');
+        return crypto.timingSafeEqual(Buffer.from(clientHash), Buffer.from(generatedHash));
+    } catch (error) {
+        console.error("HMAC validation error:", error);
+        return false;
+    }
+};

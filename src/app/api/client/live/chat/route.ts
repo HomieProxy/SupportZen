@@ -1,6 +1,8 @@
 'use server';
 import { NextResponse } from 'next/server';
-import { addMessageToChat } from '@/lib/data';
+import { addMessageToChat, getChatById } from '@/lib/data';
+import { validateHmac } from '@/lib/auth';
+
 
 interface LiveChatPayload {
     chat_id: string;
@@ -8,25 +10,24 @@ interface LiveChatPayload {
     image_url?: string;
 }
 
-// This is a simplified secret key check. 
-// In a real-world scenario, use a more secure method like rotating tokens and store the secret in an environment variable.
-const validateApiKey = (request: Request): boolean => {
-    const authHeader = request.headers.get('Authorization');
-    const expectedApiKey = `Bearer ${process.env.CLIENT_API_SECRET || 'your-default-secret-key'}`;
-    return authHeader === expectedApiKey;
-}
 
 export async function POST(request: Request) {
-  if (!validateApiKey(request)) {
-    return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid API Key' }, { status: 401 });
-  }
-
   try {
     const body = await request.json();
     const payload: LiveChatPayload = body.data;
 
     if (!payload || !payload.chat_id || !payload.message) {
       return NextResponse.json({ status: 'error', message: 'Missing required fields: chat_id and message' }, { status: 400 });
+    }
+    
+    const chat = getChatById(payload.chat_id);
+    if (!chat) {
+        return NextResponse.json({ status: 'error', message: 'Chat session not found' }, { status: 404 });
+    }
+
+    const isAuthorized = await validateHmac(request, chat.customer.email);
+    if (!isAuthorized) {
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401 });
     }
 
     const message = {
