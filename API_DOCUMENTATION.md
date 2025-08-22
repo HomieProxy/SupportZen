@@ -72,18 +72,22 @@ curl -X POST \
 
 ### Success Response
 
-If the request is successful, the API will respond with a `200 OK` status and a JSON object containing the ID of the created or updated ticket.
+If the request is successful, the API will respond with a `200 OK` status and a structured JSON object.
 
 ```json
 {
+  "status": "success",
   "message": "Webhook received successfully.",
-  "ticketId": "TKT-005"
+  "data": {
+    "ticketId": "TKT-005"
+  },
+  "error": null
 }
 ```
 
 ### Error Responses
 
--   **`400 Bad Request`**: This indicates an issue with the request payload, such as a missing required field or invalid JSON.
+-   **`400 Bad Request`**: This indicates an issue with the request payload, such as a missing required field or invalid JSON. The response body will contain details about the error.
 -   **`500 Internal Server Error`**: This indicates an unexpected error on the server while processing the request.
 
 ---

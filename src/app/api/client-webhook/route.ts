@@ -27,12 +27,22 @@ import { ClientWebhookPayload } from '@/types';
  *             schema:
  *               type: object
  *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
  *                 message:
  *                   type: string
  *                   example: Webhook received successfully.
- *                 ticketId:
- *                   type: string
- *                   example: TKT-005
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                      ticketId:
+ *                          type: string
+ *                          example: TKT-005
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       '400':
  *         description: Bad Request. The payload is invalid or missing required fields.
  *         content:
@@ -60,25 +70,32 @@ export async function POST(request: Request) {
 
     // Basic validation to check if the data key exists
     if (!body.data) {
-      return NextResponse.json({ error: 'Invalid payload structure, missing "data" object.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', message: 'Invalid payload structure, missing "data" object.', data: null, error: 'Invalid payload structure' }, { status: 400 });
     }
 
     const payload: ClientWebhookPayload = body.data;
 
     // Here you can add more robust validation of userData if needed
     if (!payload.uuid || !payload.email || !payload.message) {
-        return NextResponse.json({ error: 'Missing required fields (uuid, email, message) in data object' }, { status: 400 });
+        return NextResponse.json({ status: 'error', message: 'Missing required fields (uuid, email, message) in data object', data: null, error: 'Missing required fields' }, { status: 400 });
     }
 
     // This function will create a new ticket or update an existing one
     const result = createOrUpdateTicketFromWebhook(payload);
     
-    return NextResponse.json({ message: 'Webhook received successfully.', ticketId: result.id });
+    return NextResponse.json({
+        status: 'success',
+        message: 'Webhook received successfully.',
+        data: {
+            ticketId: result.id
+        },
+        error: null
+    });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Webhook processing error:', error);
-    return NextResponse.json({ error: 'Failed to process webhook', details: errorMessage }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: 'Failed to process webhook', data: null, error: errorMessage }, { status: 500 });
   }
 }
 
