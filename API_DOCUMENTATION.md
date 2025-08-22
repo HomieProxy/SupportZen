@@ -12,10 +12,7 @@ The primary way to integrate with SupportZen from an external source is via the 
 
 ### Request Body
 
-The endpoint expects a `POST` request with a JSON body. The body must have a specific structure containing a `status` field and a `data` object.
-
--   **`status`** (string, required): Must always be the string `"success"`.
--   **`data`** (object, required): This object contains the actual payload. See the schema below for details.
+The endpoint expects a `POST` request with a JSON body. The body must contain a single top-level `data` object, which holds the actual payload.
 
 ### Payload Schema (`data` object)
 
@@ -43,7 +40,6 @@ curl -X POST \
   https://support.msdnoff365.tk/api/client-webhook \
   -H 'Content-Type: application/json' \
   -d '{
-    "status": "success",
     "data": {
         "uuid": "user-xyz-123",
         "email": "customer@example.com",
@@ -64,7 +60,6 @@ curl -X POST \
   https://support.msdnoff365.tk/api/client-webhook \
   -H 'Content-Type: application/json' \
   -d '{
-    "status": "success",
     "data": {
         "uuid": "user-1",
         "email": "alice.j@example.com",

@@ -15,13 +15,8 @@ import { ClientWebhookPayload } from '@/types';
  *           schema:
  *             type: object
  *             required:
- *               - status
  *               - data
  *             properties:
- *               status:
- *                 type: string
- *                 description: The status of the request, must be 'success'.
- *                 example: 'success'
  *               data:
  *                 $ref: '#/components/schemas/ClientWebhookPayload'
  *     responses:
@@ -64,8 +59,8 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Basic validation to check if the data key exists
-    if (body.status !== 'success' || !body.data) {
-      return NextResponse.json({ error: 'Invalid payload structure' }, { status: 400 });
+    if (!body.data) {
+      return NextResponse.json({ error: 'Invalid payload structure, missing "data" object.' }, { status: 400 });
     }
 
     const payload: ClientWebhookPayload = body.data;
