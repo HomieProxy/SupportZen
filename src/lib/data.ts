@@ -1,36 +1,56 @@
-
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
 import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
 
 let users: User[] = [];
-
 let tickets: Ticket[] = [];
-
 let chatSessions: ChatSession[] = [];
 
 const findOrAddUser = (payload: ClientWebhookPayload): User => {
   let user = users.find(u => u.uuid === payload.uuid);
 
   if (user) {
-    // Update existing user's details if they have changed
     user.email = payload.email;
     user.planId = payload.plan_id ? String(payload.plan_id) : 'N/A';
     user.expiredAt = payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A';
   } else {
-    // Add new user
     const newUser: User = {
       uuid: payload.uuid,
       email: payload.email,
       planId: payload.plan_id ? String(payload.plan_id) : 'N/A',
       expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
-      name: payload.email.split('@')[0], // Create a name from email
-      avatarUrl: `https://placehold.co/100x100.png`, // Generic placeholder
+      name: payload.email.split('@')[0], 
+      avatarUrl: `https://placehold.co/100x100.png`,
     };
     users.push(newUser);
     user = newUser;
   }
   return user;
 }
+
+export const createChatFromWebhook = (payload: ClientWebhookPayload): ChatSession => {
+  const customer = findOrAddUser(payload);
+  const now = new Date();
+
+  const newMessage: ChatMessage = {
+    id: `msg-${now.getTime()}`,
+    sender: 'customer',
+    content: payload.message,
+    timestamp: formatISO(now),
+    ...(payload.image_url && { attachment: { type: 'image', url: payload.image_url }})
+  };
+
+  const newChatId = `chat-${chatSessions.length + 1}`;
+  const newChatSession: ChatSession = {
+    id: newChatId,
+    customer: customer,
+    status: 'active',
+    messages: [newMessage],
+  };
+
+  chatSessions.push(newChatSession);
+  console.log('Created new chat session:', newChatSession.id);
+  return newChatSession;
+};
 
 export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): Ticket => {
   const customer = findOrAddUser(payload);
@@ -57,12 +77,11 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
     }
   }
 
-  // If no ticket_id is provided, or the provided one doesn't exist, create a new ticket.
   const newTicketId = `TKT-${String(tickets.length + 1).padStart(3, '0')}`;
   const newTicket: Ticket = {
     id: newTicketId,
     customer: customer,
-    subject: payload.message.substring(0, 50) + '...', // Use first 50 chars of message as subject
+    subject: payload.message.substring(0, 50) + '...',
     status: 'open',
     createdAt: formatISO(now),
     lastUpdate: formatISO(now),
@@ -102,13 +121,13 @@ export const updateTicketStatus = (ticketId: string, status: Ticket['status']) =
     }
 }
 
-
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
 export const getOpenTickets = () => tickets.filter(t => t.status !== 'closed');
 export const getChatSessions = () => chatSessions;
 export const getActiveChats = () => chatSessions.filter(c => c.status === 'active');
 export const getChatById = (id: string) => chatSessions.find(c => c.id === id);
+
 export const addMessageToChat = (chatId: string, message: ChatMessage) => {
     const chat = chatSessions.find(c => c.id === chatId);
     if(chat) {
@@ -126,9 +145,6 @@ export const closeChat = (chatId: string) => {
 export const clearClosedData = (cutoffDate: Date) => {
     const originalTicketCount = tickets.length;
     
-    // In a real app, you might "close" a chat session.
-    // For this mock data, we'll assume any chat that hasn't had a message
-    // in 2 days is "closed" for purging purposes.
     const twoDaysAgo = subDays(new Date(), 2);
     chatSessions.forEach(chat => {
         const lastMessage = chat.messages[chat.messages.length - 1];
@@ -145,7 +161,7 @@ export const clearClosedData = (cutoffDate: Date) => {
     const closedChatsPurged = chatSessions.filter(chat => {
         if (chat.status !== 'closed') return true;
         const lastMessage = chat.messages[chat.messages.length - 1];
-        if (!lastMessage) return true; // Keep empty chats?
+        if (!lastMessage) return true;
         return !isBefore(new Date(lastMessage.timestamp), cutoffDate);
     });
 
