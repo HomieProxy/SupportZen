@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server'
  
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
-    // The /api/client-webhook should not be protected by auth
-    if (request.nextUrl.pathname.startsWith('/api/client-webhook')) {
+    // The client API routes should not be protected by auth
+    if (request.nextUrl.pathname.startsWith('/api/client')) {
         return NextResponse.next();
     }
 }

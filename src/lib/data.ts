@@ -5,7 +5,7 @@ let users: User[] = [];
 let tickets: Ticket[] = [];
 let chatSessions: ChatSession[] = [];
 
-const findOrAddUser = (payload: ClientWebhookPayload): User => {
+const findOrAddUser = (payload: {uuid: string, email: string, plan_id?: any, expired_at?: number | null}): User => {
   let user = users.find(u => u.uuid === payload.uuid);
 
   if (user) {
@@ -52,7 +52,7 @@ export const createChatFromWebhook = (payload: ClientWebhookPayload): ChatSessio
   return newChatSession;
 };
 
-export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): Ticket => {
+export const createTicketFromWebhook = (payload: ClientWebhookPayload): Ticket => {
   const customer = findOrAddUser(payload);
   const now = new Date();
 
@@ -64,19 +64,6 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
     ...(payload.image_url && { attachment: { type: 'image', url: payload.image_url }})
   };
   
-  if (payload.ticket_id) {
-    const existingTicket = tickets.find(t => t.id === payload.ticket_id);
-    if(existingTicket) {
-      existingTicket.messages.push(newMessage);
-      existingTicket.lastUpdate = formatISO(now);
-      if (existingTicket.status === 'closed') {
-        existingTicket.status = 'open';
-      }
-      console.log('Updated ticket:', existingTicket.id);
-      return existingTicket;
-    }
-  }
-
   const newTicketId = `TKT-${String(tickets.length + 1).padStart(3, '0')}`;
   const newTicket: Ticket = {
     id: newTicketId,
@@ -92,6 +79,29 @@ export const createOrUpdateTicketFromWebhook = (payload: ClientWebhookPayload): 
   console.log('Created new ticket:', newTicket.id);
   return newTicket;
 }
+
+export const addMessageToTicketByCustomer = (ticketId: string, messageContent: string, imageUrl?: string): Ticket => {
+    const ticket = getTicketById(ticketId);
+    if (!ticket) {
+        throw new Error('Ticket not found');
+    }
+
+    const newMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        sender: 'customer',
+        content: messageContent,
+        timestamp: new Date().toISOString(),
+        ...(imageUrl && { attachment: { type: 'image', url: imageUrl } }),
+    };
+
+    ticket.messages.push(newMessage);
+    ticket.lastUpdate = new Date().toISOString();
+    if (ticket.status === 'closed') {
+        ticket.status = 'open';
+    }
+    return ticket;
+}
+
 
 export const addTicket = (ticket: Omit<Ticket, 'id' | 'createdAt' | 'lastUpdate'>): Ticket => {
     const now = new Date();
@@ -132,6 +142,8 @@ export const addMessageToChat = (chatId: string, message: ChatMessage) => {
     const chat = chatSessions.find(c => c.id === chatId);
     if(chat) {
         chat.messages.push(message);
+    } else {
+        throw new Error('Chat session not found');
     }
 }
 
