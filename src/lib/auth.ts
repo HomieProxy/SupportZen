@@ -47,22 +47,7 @@ export async function logout() {
     return Promise.resolve();
 }
 
-// In a real-world scenario, the secret key would be stored securely in an environment variable.
-const getSharedSecret = (): string => {
-    return process.env.CLIENT_API_SECRET || 'your-default-secret-key';
-}
-
-export async function validateApiKey(request: Request): Promise<boolean> {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return false;
-    }
-    const providedKey = authHeader.split(' ')[1];
-    const serverKey = getSharedSecret();
-    return providedKey === serverKey;
-};
-
-export const validateHmac = async (request: Request, email: string): Promise<boolean> => {
+export async function validateHmac(request: Request, email: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return false;
