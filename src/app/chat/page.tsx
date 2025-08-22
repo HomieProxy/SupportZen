@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -351,7 +352,8 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
   );
 }
 
-export default function ChatPage() {
+
+function ChatPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [allChats, setAllChats] = useState(() => getActiveChats());
@@ -359,16 +361,23 @@ export default function ChatPage() {
 
   useEffect(() => {
     const chatIdFromUrl = searchParams.get('id');
-    if (chatIdFromUrl && allChats.find(c => c.id === chatIdFromUrl)) {
-      setSelectedChatId(chatIdFromUrl);
-    } else if (allChats.length > 0) {
-      setSelectedChatId(allChats[0].id);
-      router.replace(`/chat?id=${allChats[0].id}`);
-    } else {
-      setSelectedChatId(null);
-    }
-  }, [searchParams, allChats, router]);
+    const validChatIds = allChats.map(c => c.id);
 
+    if (chatIdFromUrl && validChatIds.includes(chatIdFromUrl)) {
+      if (selectedChatId !== chatIdFromUrl) {
+          setSelectedChatId(chatIdFromUrl);
+      }
+    } else if (allChats.length > 0) {
+      const newSelectedId = allChats[0].id;
+      setSelectedChatId(newSelectedId);
+      router.replace(`/chat?id=${newSelectedId}`);
+    } else {
+        if(selectedChatId !== null) {
+            setSelectedChatId(null);
+        }
+    }
+  }, [searchParams, allChats, router, selectedChatId]);
+  
   const selectedChat = useMemo(
     () => (selectedChatId ? getChatById(selectedChatId) : null),
     [selectedChatId]
@@ -376,45 +385,51 @@ export default function ChatPage() {
   
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    window.history.pushState(null, '', `/chat?id=${id}`);
+    router.push(`/chat?id=${id}`, { scroll: false });
   }
 
   const handleChatClose = (closedChatId: string) => {
-    // Refetch the list of active chats
     const updatedChats = getActiveChats();
     setAllChats(updatedChats);
 
-    // If the closed chat was the selected one, select the next available one
     if (selectedChatId === closedChatId) {
       if (updatedChats.length > 0) {
         const newSelectedId = updatedChats[0].id;
-        setSelectedChatId(newSelectedId);
         router.replace(`/chat?id=${newSelectedId}`);
       } else {
-        setSelectedChatId(null);
         router.replace('/chat');
       }
     }
   };
 
-
   return (
-    <div className="flex h-[calc(100vh-60px)]">
-      <ChatList
-        chats={allChats}
-        selectedChatId={selectedChatId}
-        onSelectChat={handleSelectChat}
-      />
-      <Separator orientation="vertical" />
-      <div className="flex-1 p-4">
-        {selectedChat ? (
-          <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Select a conversation to start chatting</p>
-          </div>
-        )}
-      </div>
+     <div className="flex h-[calc(100vh-60px)]">
+        <ChatList
+            chats={allChats}
+            selectedChatId={selectedChatId}
+            onSelectChat={handleSelectChat}
+        />
+        <Separator orientation="vertical" />
+        <div className="flex-1 p-4">
+            {selectedChat ? (
+            <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
+            ) : (
+            <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Select a conversation to start chatting</p>
+            </div>
+            )}
+        </div>
     </div>
-  );
+  )
 }
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 p-4">Loading...</div>}>
+      <ChatPageContent />
+    </Suspense>
+  )
+}
+
+
+    
