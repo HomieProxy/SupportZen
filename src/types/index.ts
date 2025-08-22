@@ -1,5 +1,5 @@
 export interface User {
-  uuid: string;
+  auth_token: string;
   name: string;
   email: string;
   avatarUrl: string;
@@ -39,7 +39,6 @@ export interface ChatSession {
 // Type for the incoming data from the client webhook
 export interface ClientWebhookPayload {
   // User information
-  uuid?: string; // Optional on create, as it will be generated
   email: string;
   name?: string;
   created_at: number;

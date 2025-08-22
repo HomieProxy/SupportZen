@@ -54,8 +54,12 @@ const getSharedSecret = (): string => {
 
 export async function validateApiKey(request: Request): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
-    const expectedApiKey = `Bearer ${getSharedSecret()}`;
-    return authHeader === expectedApiKey;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return false;
+    }
+    const providedKey = authHeader.split(' ')[1];
+    const serverKey = getSharedSecret();
+    return providedKey === serverKey;
 };
 
 export const validateHmac = async (request: Request, email: string): Promise<boolean> => {
@@ -79,7 +83,7 @@ export const validateHmac = async (request: Request, email: string): Promise<boo
     }
 
     try {
-        const secret = user.uuid;
+        const secret = user.auth_token;
         const generatedHash = crypto.createHmac('sha256', secret).update(email).digest('hex');
         return crypto.timingSafeEqual(Buffer.from(clientHash), Buffer.from(generatedHash));
     } catch (error) {

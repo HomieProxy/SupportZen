@@ -98,7 +98,7 @@ function CustomerInfo({ user }: { user: User }) {
         <CardDescription>{user.email}</CardDescription>
       </CardHeader>
       <CardContent className="text-sm space-y-2">
-        <div className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-muted-foreground" /> <span>UUID: {user.uuid}</span></div>
+        <div className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-muted-foreground" /> <span>Token: {user.auth_token}</span></div>
         <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /> <span>Plan: {user.planId}</span></div>
         <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /> <span>Expires: {user.expiredAt}</span></div>
       </CardContent>
@@ -184,7 +184,7 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
             customerEmail: customer.email,
             customerPlanId: customer.planId,
             customerExpiredAt: customer.expiredAt,
-            customerUuid: customer.uuid
+            customerUuid: customer.auth_token
         });
 
         const newTicket = addTicket({

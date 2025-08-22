@@ -15,10 +15,9 @@ const findOrAddUser = (payload: ClientWebhookPayload): User => {
     user.planId = payload.name || user.planId;
   } else {
     // Create a new user if they don't exist
-    const newUUID = randomUUID();
     const displayName = payload.name || payload.email.split('@')[0];
     const newUser: User = {
-      uuid: newUUID,
+      auth_token: `auth-token-${randomUUID()}`, // This is a mock token.
       email: payload.email,
       name: displayName,
       avatarUrl: `https://placehold.co/100x100.png`,

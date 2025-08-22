@@ -17,7 +17,7 @@ const CreateTicketFromChatInputSchema = z.object({
   customerEmail: z.string().email().describe('The email address of the customer.'),
   customerPlanId: z.string().describe('The plan ID of the customer.'),
   customerExpiredAt: z.string().describe('The expiration date of the customer plan.'),
-  customerUuid: z.string().describe('The UUID of the customer.'),
+  customerUuid: z.string().describe('The auth token of the customer.'),
 });
 
 export type CreateTicketFromChatInput = z.infer<typeof CreateTicketFromChatInputSchema>;
@@ -47,7 +47,7 @@ const createTicketPrompt = ai.definePrompt({
   Customer Email: {{customerEmail}}
   Customer Plan ID: {{customerPlanId}}
   Customer Expiration Date: {{customerExpiredAt}}
-  Customer UUID: {{customerUuid}}
+  Customer Auth Token: {{customerUuid}}
 
   Please generate a ticket ID and a summary of the issue based on the conversation.
   The summary should be concise and informative.
