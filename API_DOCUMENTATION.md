@@ -36,11 +36,11 @@ The `data` object corresponds to the `ClientWebhookPayload` type in the applicat
 
 ### Example Request
 
-Here is an example of a valid cURL request to create a new ticket:
+Here is an example of a valid cURL request to create a new ticket, sending the data to your specific domain:
 
 ```bash
 curl -X POST \
-  https://<YOUR_APP_URL>/api/client-webhook \
+  https://support.msdnoff365.tk/api/client-webhook \
   -H 'Content-Type: application/json' \
   -d '{
     "status": "success",
@@ -57,11 +57,11 @@ curl -X POST \
 
 ### Example: Appending to an Existing Ticket
 
-To add a follow-up message to ticket `TKT-001`:
+To add a follow-up message to ticket `TKT-001`, your client would send a request like this:
 
 ```bash
 curl -X POST \
-  https://<YOUR_APP_URL>/api/client-webhook \
+  https://support.msdnoff365.tk/api/client-webhook \
   -H 'Content-Type: application/json' \
   -d '{
     "status": "success",
@@ -96,4 +96,3 @@ If the request is successful, the API will respond with a `200 OK` status and a 
 ## Internal API: Server Actions
 
 For communication *within* the SupportZen application (i.e., between its own frontend components and its backend logic), it uses **Next.js Server Actions** with **Genkit flows**. This approach allows client-side components to directly call server-side functions securely without needing traditional REST or GraphQL API endpoints. If you are extending the SupportZen application itself, you should use this method.
-```
