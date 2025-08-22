@@ -2,7 +2,11 @@
 
 This document explains how to send data to the SupportZen application from an external client, such as a separate frontend application or a third-party service. The API is divided into two main categories: **Tickets** and **Live Chat**.
 
-All requests must have a `Content-Type: application/json` header and contain a JSON body with a single top-level `data` object, which holds the actual payload.
+All requests must have a `Content-Type: application/json` header and a valid `Authorization` header containing your secret API key as a Bearer token.
+
+`Authorization: Bearer your-secret-api-key`
+
+All request bodies must contain a single top-level `data` object, which holds the actual payload.
 
 ---
 
@@ -34,6 +38,7 @@ This endpoint creates a new support ticket.
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/create \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer your-secret-api-key' \
   -d '{
     "data": {
         "uuid": "user-abc-456",
@@ -79,6 +84,7 @@ This endpoint adds a follow-up message to an existing ticket.
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/append \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer your-secret-api-key' \
   -d '{
     "data": {
         "ticket_id": "TKT-001",
@@ -123,6 +129,7 @@ The payload is identical to the "Create a New Ticket" endpoint.
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/create \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer your-secret-api-key' \
   -d '{
     "data": {
         "uuid": "user-def-789",
@@ -168,6 +175,7 @@ This endpoint sends a message to an active chat session.
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/chat \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer your-secret-api-key' \
   -d '{
     "data": {
         "chat_id": "chat-1",
