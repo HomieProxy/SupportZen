@@ -1,32 +1,33 @@
-# Dockerfile for Pre-built Next.js Application
+# Dockerfile
+# Use an official Node.js runtime as a parent image (Alpine for smaller size)
+FROM node:20-alpine
 
-# Stage 1: Production Runner
-# Use a slim Node.js image for the final container
-FROM node:20-alpine AS runner
+# Set the working directory in the container
 WORKDIR /app
 
-# Set environment variables for Next.js
+# Set NODE_ENV to production to ensure Next.js runs in production mode
+# and npm installs only production dependencies.
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED 1
 
-# Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy package.json and package-lock.json (if available) first.
+# This leverages Docker's layer caching. If these files haven't changed,
+# Docker won't re-run npm install unless necessary.
+# The release artifact created by the workflow only has package.json.
+COPY package.json ./
 
-# Copy only the necessary pre-built files from the host
-# These files will come from the unzipped artifact from the GitHub workflow
-COPY --chown=nextjs:nodejs ./.next ./.next
-COPY --chown=nextjs:nodejs ./package.json ./package.json
+# Install production dependencies.
+# --omit=dev is the modern equivalent of --production.
+RUN npm install --omit=dev
 
-# If a 'public' folder exists in the artifact, copy it
-COPY --chown=nextjs:nodejs ./public ./public
+# Copy the rest of the application files from the build context.
+# This includes the .next folder (build output), public folder (if exists),
+# and next.config.js or next.config.mjs (if exists), etc.
+# The .dockerignore file will prevent unnecessary files from being copied.
+COPY . .
 
-# Switch to the non-root user
-USER nextjs
+# Expose the port Next.js runs on by default (3000)
+EXPOSE 3100
 
-# Expose the port the app runs on
-EXPOSE 3000
-
-# The command to start the application
-# This assumes the start script in package.json is `next start`
+# Define the command to run the app.
+# `npm start` will execute `next start` as defined in your package.json.
 CMD ["npm", "start"]
