@@ -24,6 +24,8 @@ The SupportZen backend must re-calculate this hash using the `email` from the re
 
 ## Endpoints
 
+All endpoints expect a `Content-Type` of `multipart/form-data`.
+
 ### 1. Create a New Live Chat Session
 
 This endpoint initiates a new chat session. It should be called only when the user sends their first message in a new conversation.
@@ -31,7 +33,7 @@ This endpoint initiates a new chat session. It should be called only when the us
 -   **Endpoint:** `POST /api/client/live/create`
 -   **Authentication:** Required (HMAC Bearer Token).
 
-#### Request Payload
+#### Request Form Data
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -40,24 +42,20 @@ This endpoint initiates a new chat session. It should be called only when the us
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
 | `message` | string | Yes | The initial message content from the user. |
-| `image_url` | string | No | An optional URL to an image to be attached. |
+| `image` | file | No | An optional image file to be attached. |
 
-#### Example Request
+#### Example Request (using `curl`)
 
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/create \
-  -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <the-generated-hmac-hash>' \
-  -d '{
-    "data": {
-        "email": "user@example.com",
-        "name": "Premium Plan",
-        "plan_id": 5,
-        "created_at": 1679223400,
-        "message": "Hi, I have a quick question!"
-    }
-}'
+  -F 'email=user@example.com' \
+  -F 'name=Premium Plan' \
+  -F 'plan_id=5' \
+  -F 'created_at=1679223400' \
+  -F 'message=Hi, I have a quick question!' \
+  -F 'image=@/path/to/your/image.jpg'
 ```
 
 #### Success Response
@@ -82,29 +80,25 @@ This endpoint is used to send all subsequent messages after a chat session has b
 -   **Endpoint:** `POST /api/client/live/chat`
 -   **Authentication:** Required (HMAC Bearer Token).
 
-#### Request Payload
+#### Request Form Data
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `chat_id` | string | Yes | The ID of the active chat session (obtained from the `/create` endpoint). |
 | `email` | string | Yes | The user's email, used for HMAC verification. |
 | `message` | string | Yes | The content of the chat message. |
-| `image_url`| string | No | An optional URL to an image to be attached. |
+| `image`| file | No | An optional image file to be attached. |
 
-#### Example Request
+#### Example Request (using `curl`)
 
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/chat \
-  -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <the-generated-hmac-hash>' \
-  -d '{
-    "data": {
-        "chat_id": "chat-session-xyz-123",
-        "email": "user@example.com",
-        "message": "Where can I find my subscription URL?"
-    }
-}'
+  -F 'chat_id=chat-session-xyz-123' \
+  -F 'email=user@example.com' \
+  -F 'message=Where can I find my subscription URL?' \
+  -F 'image=@/path/to/another/image.png'
 ```
 
 #### Success Response

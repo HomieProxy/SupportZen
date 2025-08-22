@@ -24,6 +24,8 @@ The SupportZen backend must re-calculate this hash using the `email` from the re
 
 ## Endpoints
 
+All endpoints expect a `Content-Type` of `multipart/form-data`.
+
 ### 1. Create a New Support Ticket
 
 This endpoint creates a new support ticket.
@@ -31,9 +33,7 @@ This endpoint creates a new support ticket.
 -   **Endpoint:** `POST /api/client/ticket/create`
 -   **Authentication:** Required (HMAC Bearer Token).
 
-#### Request Payload
-The payload is identical to creating a new chat session.
-
+#### Request Form Data
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `email` | string | Yes | The user's email address. Used for identification and HMAC validation. |
@@ -41,25 +41,20 @@ The payload is identical to creating a new chat session.
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
 | `message` | string | Yes | The initial message/subject of the ticket. |
-| `image_url` | string | No | An optional URL to an image to be attached. |
+| `image` | file | No | An optional image file to be attached. |
 
-#### Example Request
+#### Example Request (using `curl`)
 
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/create \
-  -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <the-generated-hmac-hash>' \
-  -d '{
-    "data": {
-        "email": "user@example.com",
-        "name": "Premium Plan",
-        "plan_id": 5,
-        "created_at": 1679223400,
-        "message": "My account is locked and I cannot log in.",
-        "image_url": "https://example.com/screenshot.png"
-    }
-}'
+  -F 'email=user@example.com' \
+  -F 'name=Premium Plan' \
+  -F 'plan_id=5' \
+  -F 'created_at=1679223400' \
+  -F 'message=My account is locked and I cannot log in.' \
+  -F 'image=@/path/to/your/screenshot.png'
 ```
 
 #### Success Response
@@ -84,29 +79,25 @@ This endpoint adds a new message from the customer to an existing ticket.
 -   **Endpoint:** `POST /api/client/ticket/append`
 -   **Authentication:** Required (HMAC Bearer Token).
 
-#### Request Payload
+#### Request Form Data
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `ticket_id` | string | Yes | The ID of the ticket to append the message to. |
 | `email` | string | Yes | The user's email, used for HMAC verification. |
 | `message` | string | Yes | The content of the message. |
-| `image_url`| string | No | An optional URL to an image to be attached. |
+| `image`| file | No | An optional image file to be attached. |
 
-#### Example Request
+#### Example Request (using `curl`)
 
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/append \
-  -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <the-generated-hmac-hash>' \
-  -d '{
-    "data": {
-        "ticket_id": "TKT-001",
-        "email": "user@example.com",
-        "message": "I've tried resetting my password, but it didn't work."
-    }
-}'
+  -F 'ticket_id=TKT-001' \
+  -F 'email=user@example.com' \
+  -F 'message=I\'ve tried resetting my password, but it didn\'t work.' \
+  -F 'image=@/path/to/another/screenshot.png'
 ```
 
 #### Success Response

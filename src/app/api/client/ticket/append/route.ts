@@ -1,40 +1,47 @@
+
 'use server';
 import { NextResponse } from 'next/server';
 import { addMessageToTicketByCustomer, getTicketById } from '@/lib/data';
 import { validateHmac } from '@/lib/auth';
+import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
-interface AppendTicketPayload {
-    ticket_id: string;
-    email: string; // Email is needed for HMAC validation
-    message: string;
-    image_url?: string;
-}
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const payload: AppendTicketPayload = body.data;
+    const { fields, files } = await parseForm(request as any);
 
-    if (!payload || !payload.ticket_id || !payload.message || !payload.email) {
+    const ticketId = getField(fields, 'ticket_id');
+    const messageContent = getField(fields, 'message');
+    const email = getField(fields, 'email');
+
+    if (!ticketId || !messageContent || !email) {
       return NextResponse.json({ status: 'error', message: 'Missing required fields: ticket_id, email, and message' }, { status: 400 });
     }
     
-    const ticket = getTicketById(payload.ticket_id);
+    const ticket = getTicketById(ticketId);
     if (!ticket) {
         return NextResponse.json({ status: 'error', message: 'Ticket not found' }, { status: 404 });
     }
 
     // The email in the payload MUST match the email associated with the ticket
-    if (ticket.customer.email !== payload.email) {
+    if (ticket.customer.email !== email) {
         return NextResponse.json({ status: 'error', message: 'Email does not match ticket owner' }, { status: 403 });
     }
 
-    const isAuthorized = await validateHmac(request, payload.email);
+    const isAuthorized = await validateHmac(request, email);
     if (!isAuthorized) {
         return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401 });
     }
 
-    const updatedTicket = addMessageToTicketByCustomer(payload.ticket_id, payload.message, payload.image_url);
+    const imageUrl = getPublicUrl(files.image);
+
+    const updatedTicket = addMessageToTicketByCustomer(ticketId, messageContent, imageUrl);
 
     return NextResponse.json({
         status: 'success',
