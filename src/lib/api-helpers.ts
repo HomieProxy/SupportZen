@@ -1,7 +1,6 @@
 
-'use server';
-import { NextRequest } from 'next/server';
-import formidable, { File } from 'formidable';
+import type { NextRequest } from 'next/server';
+import formidable, { type File } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
