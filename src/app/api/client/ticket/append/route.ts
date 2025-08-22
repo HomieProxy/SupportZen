@@ -4,12 +4,18 @@ import { addMessageToTicketByCustomer, getTicketById } from '@/lib/data';
 import { validateHmac } from '@/lib/auth';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -20,22 +26,22 @@ export async function POST(request: Request) {
     const email = getField(fields, 'email');
 
     if (!ticketId || !messageContent || !email) {
-      return NextResponse.json({ status: 'error', message: 'Missing required fields: ticket_id, email, and message' }, { status: 400 });
+      return NextResponse.json({ status: 'error', message: 'Missing required fields: ticket_id, email, and message' }, { status: 400, headers: corsHeaders });
     }
     
     const ticket = getTicketById(ticketId);
     if (!ticket) {
-        return NextResponse.json({ status: 'error', message: 'Ticket not found' }, { status: 404 });
+        return NextResponse.json({ status: 'error', message: 'Ticket not found' }, { status: 404, headers: corsHeaders });
     }
 
     // The email in the payload MUST match the email associated with the ticket
     if (ticket.customer.email !== email) {
-        return NextResponse.json({ status: 'error', message: 'Email does not match ticket owner' }, { status: 403 });
+        return NextResponse.json({ status: 'error', message: 'Email does not match ticket owner' }, { status: 403, headers: corsHeaders });
     }
 
     const isAuthorized = await validateHmac(request, email);
     if (!isAuthorized) {
-        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401 });
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401, headers: corsHeaders });
     }
 
     const imageUrl = getPublicUrl(files.image);
@@ -50,10 +56,10 @@ export async function POST(request: Request) {
             messageId: updatedTicket.messages[updatedTicket.messages.length - 1].id
         },
         error: null
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ status: 'error', message: 'Failed to append to ticket', error: errorMessage }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: 'Failed to append to ticket', error: errorMessage }, { status: 500, headers: corsHeaders });
   }
 }
