@@ -2,6 +2,18 @@
 import { getUserByEmail } from './data';
 import crypto from 'crypto';
 
+// This is a stand-in for a secure way to get a shared secret.
+// In a real application, this should come from a secure source like environment variables.
+const getSharedSecret = () => {
+    const secret = process.env.CLIENT_API_SECRET_KEY;
+    if (!secret) {
+        // For development, we can use a default, but this is not secure for production.
+        console.warn("CLIENT_API_SECRET_KEY is not set. Using a default, insecure key.");
+        return "default_insecure_secret_key_for_development_only";
+    }
+    return secret;
+}
+
 export async function login(email: string, password: string) {
     try {
         const response = await fetch("https://myboard.316293.xyz/api/v1/passport/auth/login", {
@@ -47,32 +59,28 @@ export async function logout() {
     return Promise.resolve();
 }
 
+// This function is no longer HMAC-based but a simple bearer token check.
+// I'm renaming it for clarity, but keeping the `validateHmac` name in the API routes
+// to minimize breaking changes during this refactor.
 export async function validateHmac(request: Request, email: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return false;
     }
     
-    const clientHash = authHeader.split(' ')[1];
-    if (!clientHash) {
+    const clientKey = authHeader.split(' ')[1];
+    if (!clientKey) {
         return false;
     }
     
-    const user = getUserByEmail(email);
-    // If the user doesn't exist, we can't verify the hash.
-    // The request to /api/client/live/create will proceed to create a new user.
-    if (!user) {
-        // For new users, we can't validate, so we assume it's their first contact.
-        // A more secure system might have a separate pre-registration step.
-        return true; 
-    }
+    const serverKey = getSharedSecret();
 
+    // Use crypto.timingSafeEqual to prevent timing attacks
     try {
-        const secret = user.auth_token;
-        const generatedHash = crypto.createHmac('sha256', secret).update(email).digest('hex');
-        return crypto.timingSafeEqual(Buffer.from(clientHash), Buffer.from(generatedHash));
-    } catch (error) {
-        console.error("HMAC validation error:", error);
+        return crypto.timingSafeEqual(Buffer.from(clientKey), Buffer.from(serverKey));
+    } catch {
+        // This will catch errors if the buffer lengths are different, which is expected
+        // for non-matching keys.
         return false;
     }
 };
