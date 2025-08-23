@@ -355,53 +355,48 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
 
 function ChatPageContent({ chatId }: { chatId: string | null }) {
   const router = useRouter();
-
   const [allChats, setAllChats] = useState(() => getActiveChats());
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(chatId);
-
-  useEffect(() => {
-    const validChatIds = allChats.map(c => c.id);
-    let newSelectedId = selectedChatId;
-
-    if (newSelectedId && !validChatIds.includes(newSelectedId)) {
-        newSelectedId = null;
-    }
-
-    if (!newSelectedId && allChats.length > 0) {
-        newSelectedId = allChats[0].id;
-    }
-
-    setSelectedChatId(newSelectedId);
-    
-    if (newSelectedId && newSelectedId !== selectedChatId) {
-      router.replace(`/chat?id=${newSelectedId}`);
-    }
-
-  }, [chatId, allChats, router, selectedChatId]);
   
-  const selectedChat = useMemo(
-    () => (selectedChatId ? getChatById(selectedChatId) : null),
-    [selectedChatId]
-  );
+  // This effect will poll for new chat messages.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const activeChats = getActiveChats();
+       setAllChats(prevChats => {
+        // A simple check to see if we need to re-render.
+        if(JSON.stringify(prevChats) !== JSON.stringify(activeChats)) {
+          return activeChats;
+        }
+        return prevChats;
+       });
+    }, 2000); // Poll for new chats every 2 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const selectedChat = useMemo(() => {
+    // If no chatId, or if the chatId from the URL isn't in our active chats, return null.
+    if (!chatId || !allChats.some(c => c.id === chatId)) {
+        return null;
+    }
+    return getChatById(chatId);
+  }, [chatId, allChats]);
   
   const handleSelectChat = (id: string) => {
+    // Navigate to the new chat URL without a full page reload.
     router.push(`/chat?id=${id}`, { scroll: false });
-    setSelectedChatId(id);
   }
 
   const handleChatClose = (closedChatId: string) => {
     const updatedChats = getActiveChats();
     setAllChats(updatedChats);
 
-    if (selectedChatId === closedChatId) {
-      if (updatedChats.length > 0) {
-        const newId = updatedChats[0].id;
-        router.replace(`/chat?id=${newId}`);
-        setSelectedChatId(newId);
-      } else {
-        router.replace('/chat');
-        setSelectedChatId(null);
-      }
+    // If the closed chat was the one being viewed
+    if (chatId === closedChatId) {
+        if (updatedChats.length > 0) {
+            const newId = updatedChats[0].id;
+            router.replace(`/chat?id=${newId}`);
+        } else {
+            router.replace('/chat');
+        }
     }
   };
 
@@ -409,7 +404,7 @@ function ChatPageContent({ chatId }: { chatId: string | null }) {
      <div className="flex h-[calc(100vh-60px)]">
         <ChatList
             chats={allChats}
-            selectedChatId={selectedChatId}
+            selectedChatId={chatId}
             onSelectChat={handleSelectChat}
         />
         <Separator orientation="vertical" />
@@ -418,7 +413,7 @@ function ChatPageContent({ chatId }: { chatId: string | null }) {
             <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
             ) : (
             <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">Select a conversation to start chatting</p>
+                <p className="text-muted-foreground">{ allChats.length > 0 ? "Select a conversation to start chatting" : "No active conversations"}</p>
             </div>
             )}
         </div>
@@ -439,5 +434,3 @@ export default function ChatPage() {
     </Suspense>
   )
 }
-
-    
