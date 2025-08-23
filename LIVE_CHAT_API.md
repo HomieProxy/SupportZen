@@ -4,12 +4,16 @@ This document specifies the API for the stateful live chat service, designed to 
 
 ## Authentication
 
-All requests to the Live Chat API must be authenticated. The `Authorization` header must contain a Bearer token which is an HMAC-SHA256 hash.
+All requests to the Live Chat API must be authenticated using an HMAC-based Bearer token. This ensures that requests are coming from a trusted client application.
 
-The hash is generated from the user's `email` and a pre-shared secret key.
+The signature is an **HMAC-SHA256** hash generated from two components:
+1. The user's `email` address.
+2. The `CLIENT_API_SECRET_KEY` which is configured in your SupportZen dashboard settings and must be securely stored on your client application's server.
+
+The client application must generate this hash for each request and include it in the `Authorization` header. The SupportZen server will perform the same calculation to verify the request's authenticity.
 
 **Example Header:**
-`Authorization: Bearer <HMAC_SHA256(email, YOUR_SHARED_SECRET_KEY)>`
+`Authorization: Bearer <HMAC_SHA256(email, YOUR_CLIENT_API_SECRET_KEY)>`
 
 ---
 
@@ -28,7 +32,7 @@ This endpoint initiates a new chat session. It should be called only when the us
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `email` | string | Yes | The user's email address. Used for HMAC generation. |
+| `email` | string | Yes | The user's email address. **This is used to generate the HMAC signature.** |
 | `name` | string | No | The user's name or current plan name (e.g., "Basic Plan"). |
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
@@ -76,7 +80,7 @@ This endpoint is used to send all subsequent messages after a chat session has b
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `chat_id` | string | Yes | The ID of the active chat session (obtained from the `/create` endpoint). |
-| `email` | string | Yes | The user's email, used for request validation and HMAC generation. |
+| `email` | string | Yes | The user's email, used for HMAC signature generation and validation. |
 | `message` | string | Yes | The content of the chat message. |
 | `image`| file | No | An optional image file to be attached. |
 
