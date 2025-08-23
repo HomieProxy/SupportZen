@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import { createChatFromWebhook } from '@/lib/data';
 import type { ClientWebhookPayload } from '@/types';
-import { validateHmac } from '@/lib/auth';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
 const corsHeaders = {
@@ -20,7 +19,7 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { fields, files } = await parseForm(request as any);
+    const { fields, files } = await parseForm(request);
     
     const email = getField(fields, 'email');
     const message = getField(fields, 'message');
@@ -30,10 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'error', message: 'Missing required fields: email, message, and created_at' }, { status: 400, headers: corsHeaders });
     }
 
-    const isAuthorized = await validateHmac(request, email);
-    if (!isAuthorized) {
-        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401, headers: corsHeaders });
-    }
+    const authToken = request.headers.get('Authorization')?.split(' ')[1];
 
     const imageUrl = getPublicUrl(files.image);
 
@@ -41,6 +37,7 @@ export async function POST(request: Request) {
       email,
       message,
       created_at: parseInt(createdAt, 10),
+      auth_token: authToken,
       name: getField(fields, 'name'),
       plan_id: getField(fields, 'plan_id'),
       expired_at: getField(fields, 'expired_at') ? parseInt(getField(fields, 'expired_at')!, 10) : undefined,

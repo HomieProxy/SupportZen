@@ -44,6 +44,7 @@ export interface ClientWebhookPayload {
   created_at: number;
   expired_at?: number | null;
   plan_id?: number | string | null;
+  auth_token?: string;
   
   // Support request information
   message: string;

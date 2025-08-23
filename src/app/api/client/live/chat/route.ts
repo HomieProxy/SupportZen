@@ -19,7 +19,7 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { fields, files } = await parseForm(request as any);
+    const { fields, files } = await parseForm(request);
 
     const chatId = getField(fields, 'chat_id');
     const messageContent = getField(fields, 'message');

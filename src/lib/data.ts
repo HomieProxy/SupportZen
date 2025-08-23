@@ -13,11 +13,12 @@ const findOrAddUser = (payload: ClientWebhookPayload): User => {
     // Update user details if they've changed. The `name` from payload is the plan name.
     user.name = payload.name || user.name;
     user.planId = payload.name || user.planId;
+    user.auth_token = payload.auth_token || user.auth_token;
   } else {
     // Create a new user if they don't exist
     const displayName = payload.name || payload.email.split('@')[0];
     const newUser: User = {
-      auth_token: `auth-token-${randomUUID()}`, // This is a mock token.
+      auth_token: payload.auth_token || `auth-token-${randomUUID()}`,
       email: payload.email,
       name: displayName,
       avatarUrl: `https://placehold.co/100x100.png`,
