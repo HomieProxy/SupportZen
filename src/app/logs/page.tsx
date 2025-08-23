@@ -61,7 +61,10 @@ export default function LogsPage() {
 
   useEffect(() => {
     fetchLogs();
-  }, [toast]);
+    const interval = setInterval(fetchLogs, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const handleClearLogs = async () => {
     try {
@@ -163,7 +166,7 @@ export default function LogsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading && allLogs.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
                         Loading logs...
