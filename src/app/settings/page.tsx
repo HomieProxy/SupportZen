@@ -21,7 +21,8 @@ import { getSettings, updateSettings } from '@/app/actions/settings';
 
 export default function SettingsPage() {
     const { toast } = useToast();
-    const [apiKey, setApiKey] = useState('');
+    const [geminiApiKey, setGeminiApiKey] = useState('');
+    const [clientApiSecretKey, setClientApiSecretKey] = useState('');
     const [purgePeriod, setPurgePeriod] = useState<string>('7d');
     const [customDate, setCustomDate] = useState<Date | undefined>();
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
@@ -32,7 +33,7 @@ export default function SettingsPage() {
     useEffect(() => {
         const storedKey = localStorage.getItem('gemini_api_key');
         if (storedKey) {
-            setApiKey(storedKey);
+            setGeminiApiKey(storedKey);
         }
         
         async function fetchSettings() {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
                 setIsLoading(true);
                 const settings = await getSettings();
                 setAllowedDomains(settings.allowedDomains || []);
+                setClientApiSecretKey(settings.clientApiSecretKey || '');
             } catch (error) {
                 toast({
                     variant: 'destructive',
@@ -68,10 +70,10 @@ export default function SettingsPage() {
     const handleSaveSettings = async () => {
         setIsSaving(true);
         try {
-            await updateSettings({ allowedDomains });
+            await updateSettings({ allowedDomains, clientApiSecretKey });
             toast({
                 title: 'Settings Saved',
-                description: 'Your allowed domains have been updated successfully.',
+                description: 'Your settings have been updated successfully.',
             });
         } catch (error) {
              toast({
@@ -85,8 +87,8 @@ export default function SettingsPage() {
     }
 
 
-    const handleSaveApiKey = () => {
-        localStorage.setItem('gemini_api_key', apiKey);
+    const handleSaveGeminiApiKey = () => {
+        localStorage.setItem('gemini_api_key', geminiApiKey);
         toast({
             title: 'API Key Saved',
             description: 'Your Gemini API key has been saved to local storage.',
@@ -130,11 +132,8 @@ export default function SettingsPage() {
             <h2 className="text-3xl font-bold tracking-tight font-headline">
                 Settings
             </h2>
-            <Button asChild variant="outline">
-                <Link href="/">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Home
-                </Link>
+             <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
+                {isSaving ? 'Saving...' : 'Save All Settings'}
             </Button>
         </div>
       <Card>
@@ -162,26 +161,41 @@ export default function SettingsPage() {
       <Card>
           <CardHeader>
               <CardTitle>API Settings</CardTitle>
-              <CardDescription>Manage your API keys for third-party services.</CardDescription>
+              <CardDescription>Manage your API keys for third-party services and client access.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
               <div className="space-y-2">
-                  <Label htmlFor="apiKey">Gemini API Key</Label>
+                  <Label htmlFor="clientApiSecretKey">Client API Secret Key</Label>
                    <div className="flex gap-2">
                     <Input 
-                        id="apiKey"
+                        id="clientApiSecretKey"
+                        type="password"
+                        placeholder="Enter a strong, unique secret key"
+                        value={clientApiSecretKey}
+                        onChange={(e) => setClientApiSecretKey(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                      This secret key is used to generate HMAC signatures for securing your client-side API requests. It must match the key used in your client application.
+                  </p>
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="geminiApiKey">Gemini API Key (Local)</Label>
+                   <div className="flex gap-2">
+                    <Input 
+                        id="geminiApiKey"
                         type="password"
                         placeholder="Enter your Gemini API Key"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
+                        value={geminiApiKey}
+                        onChange={(e) => setGeminiApiKey(e.target.value)}
                     />
-                    <Button onClick={handleSaveApiKey}>Save</Button>
+                    <Button onClick={handleSaveGeminiApiKey} variant="outline">Save to Browser</Button>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg border bg-muted/50 text-sm">
                       <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
                       <div className="flex-1">
                           <p className="text-muted-foreground">
-                              This key is stored in your browser's local storage and is used for client-side AI operations. For server-side operations, you must create a <code className="font-mono bg-background p-1 rounded-sm">.env.local</code> file in the project root and add your key there as <code className="font-mono bg-background p-1 rounded-sm">GEMINI_API_KEY=your_key_here</code>.
+                              The Gemini key is stored only in your browser's local storage and is used for client-side AI operations. For server-side AI, you must configure it separately in your deployment environment.
                           </p>
                       </div>
                   </div>
@@ -233,11 +247,6 @@ export default function SettingsPage() {
                  </>
             )}
           </CardContent>
-          <div className="flex justify-end p-6 pt-0">
-             <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
       </Card>
       
        <Card>

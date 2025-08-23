@@ -1,13 +1,12 @@
 
 'use server';
 import crypto from 'crypto';
-import { getAllowDomains as getConfiguredDomains } from './config';
+import { getAllowDomains as getConfiguredDomains, getClientApiSecretKey } from './config';
 
-const getSharedSecret = (): string => {
-    const secret = process.env.CLIENT_API_SECRET_KEY;
-    if (!secret) {
-        console.error("FATAL: CLIENT_API_SECRET_KEY is not set in environment variables.");
-        // In a real app, you might want to throw an error to prevent insecure operation.
+const getSharedSecret = async (): Promise<string> => {
+    const secret = await getClientApiSecretKey();
+    if (!secret || secret === 'default_insecure_secret_key_for_development_only') {
+        console.error("SECURITY WARNING: Using default or missing CLIENT_API_SECRET_KEY. Please set a secure key in the dashboard settings.");
         return "default_insecure_secret_key_for_development_only";
     }
     return secret;
@@ -75,7 +74,7 @@ export async function validateHmac(request: Request, email: string): Promise<boo
     }
 
     // Re-create the HMAC on the server
-    const secret = getSharedSecret();
+    const secret = await getSharedSecret();
     const serverHmac = crypto.createHmac('sha256', secret).update(email).digest('hex');
 
     try {
