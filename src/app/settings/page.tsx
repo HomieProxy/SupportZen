@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -11,23 +11,32 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { clearClosedData } from '@/lib/data';
+import { getAllowDomains } from '@/lib/auth';
 
 export default function SettingsPage() {
     const { toast } = useToast();
     const [apiKey, setApiKey] = useState('');
     const [purgePeriod, setPurgePeriod] = useState<string>('7d');
     const [customDate, setCustomDate] = useState<Date | undefined>();
+    const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const storedKey = localStorage.getItem('gemini_api_key');
         if (storedKey) {
             setApiKey(storedKey);
         }
+        
+        async function fetchDomains() {
+            const domains = await getAllowDomains();
+            setAllowedDomains(domains);
+        }
+        fetchDomains();
+
     }, []);
 
     const handleSaveApiKey = () => {
@@ -131,6 +140,36 @@ export default function SettingsPage() {
                       </div>
                   </div>
               </div>
+          </CardContent>
+      </Card>
+
+      <Card>
+          <CardHeader>
+              <CardTitle>Allowed Domains for API Access</CardTitle>
+              <CardDescription>These are the only domains that can create new tickets or chats via the client API.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {allowedDomains.length > 0 ? (
+                 <div className="space-y-2">
+                    {allowedDomains.map(domain => (
+                        <div key={domain} className="flex items-center gap-2 text-sm p-2 bg-muted rounded-md">
+                           <ShieldCheck className="h-4 w-4 text-green-500"/>
+                           <span className="font-mono">{domain}</span>
+                        </div>
+                    ))}
+                 </div>
+            ) : (
+                <p className="text-sm text-muted-foreground">No domains configured. All origins are currently allowed.</p>
+            )}
+
+            <div className="flex items-start gap-2 p-2 rounded-lg border bg-muted/50 text-sm mt-4">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                <div className="flex-1">
+                    <p className="text-muted-foreground">
+                        This list is read-only. To manage allowed domains, you must create or edit a <code className="font-mono bg-background p-1 rounded-sm">.env.local</code> file in the project root and add your domains there (e.g., <code className="font-mono bg-background p-1 rounded-sm">ALLOWED_DOMAINS=example.com,*.your-domain.com</code>).
+                    </p>
+                </div>
+            </div>
           </CardContent>
       </Card>
       

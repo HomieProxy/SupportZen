@@ -97,15 +97,28 @@ export async function validateClientRequest(request: Request): Promise<boolean> 
 };
 
 /**
+ * Retrieves the list of allowed domains from environment variables.
+ * This function is safe to call on the client because it only exposes the env var.
+ * @returns A promise that resolves to an array of allowed domain strings.
+ */
+export async function getAllowDomains(): Promise<string[]> {
+    const allowedDomainsEnv = process.env.ALLOWED_DOMAINS;
+    if (!allowedDomainsEnv) {
+        return [];
+    }
+    return allowedDomainsEnv.split(',').map(d => d.trim()).filter(Boolean);
+}
+
+/**
  * Validates that the request's origin domain is in the allowed list.
  * @param request The incoming Request object.
  * @returns A boolean indicating if the origin is allowed.
  */
 export async function validateDomain(request: Request): Promise<boolean> {
     const origin = request.headers.get('Origin');
-    const allowedDomainsEnv = process.env.ALLOWED_DOMAINS;
+    const allowedDomains = await getAllowDomains();
 
-    if (!allowedDomainsEnv) {
+    if (allowedDomains.length === 0) {
         console.warn("ALLOWED_DOMAINS is not set in .env. Allowing all domains for development, but this is insecure for production.");
         return true;
     }
@@ -115,7 +128,7 @@ export async function validateDomain(request: Request): Promise<boolean> {
         return false; // Block requests without an origin
     }
 
-    const allowedDomains = allowedDomainsEnv.split(',').map(d => d.trim()).filter(Boolean);
+    
     const requestHost = new URL(origin).hostname;
 
     for (const pattern of allowedDomains) {
