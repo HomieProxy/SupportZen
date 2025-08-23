@@ -358,8 +358,14 @@ function ChatPageContent({ chatId }: { chatId: string | null }) {
   const [allChats, setAllChats] = useState(() => getActiveChats());
   
   useEffect(() => {
-    const activeChats = getActiveChats();
-    setAllChats(activeChats);
+    const fetchData = () => {
+        const activeChats = getActiveChats();
+        setAllChats(activeChats);
+    }
+    fetchData(); // Initial fetch
+    const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, [chatId]);
 
   const selectedChat = useMemo(() => {

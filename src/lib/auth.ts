@@ -112,9 +112,9 @@ export async function validateDomain(request: Request): Promise<boolean> {
     const allowedDomains = await getAllowDomains();
 
     if (allowedDomains.length === 0) {
-        // This is a fallback for development. In production, this should be a hard failure.
-        console.warn("No allowed domains configured. Allowing all domains for development, but this is insecure for production.");
-        return true;
+        // If no domains are configured, block all requests for security.
+        console.error("Security Alert: No allowed domains configured. Blocking all cross-origin API requests. Please add allowed domains in the dashboard settings.");
+        return false;
     }
 
     if (!origin) {

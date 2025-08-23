@@ -27,21 +27,25 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
-  // We need to use state to ensure the dashboard re-renders when data changes.
   const [allTickets, setAllTickets] = useState(getTickets());
   const [allChats, setAllChats] = useState(getChatSessions());
   const [activeChats, setActiveChats] = useState(getActiveChats());
   const [openTickets, setOpenTickets] = useState(getOpenTickets());
   const [logCount, setLogCount] = useState(0);
   
-  // This effect will re-fetch data if the user navigates away and back,
-  // ensuring the dashboard is up-to-date.
   useEffect(() => {
-    setActiveChats(getActiveChats());
-    setOpenTickets(getOpenTickets());
-    setAllTickets(getTickets());
-    setAllChats(getChatSessions());
-    getLogsCount().then(setLogCount);
+    const fetchData = () => {
+        setActiveChats(getActiveChats());
+        setOpenTickets(getOpenTickets());
+        setAllTickets(getTickets());
+        setAllChats(getChatSessions());
+        getLogsCount().then(setLogCount);
+    }
+    
+    fetchData(); // Initial fetch
+    const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
 
