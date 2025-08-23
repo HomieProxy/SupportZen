@@ -15,7 +15,7 @@ The hash is generated from the user's `email` and a pre-shared secret key.
 
 ## Endpoints
 
-All endpoints expect a `Content-Type` of `multipart/form-data`.
+All endpoints expect a `Content-Type` of `multipart/form-data` for `POST` requests.
 
 ### 1. Create a New Live Chat Session
 
@@ -101,6 +101,72 @@ curl -X POST \
   "data": {
     "chatId": "chat-session-xyz-123",
     "messageId": "msg-abc-456"
+  },
+  "error": null
+}
+```
+
+---
+
+### 3. View a Live Chat Session
+
+This endpoint retrieves the full details and message history for a single chat session. This is useful for resuming a chat if the user refreshes their page.
+
+-   **Endpoint:** `GET /api/client/live/chat/{id}`
+-   **Method:** `GET`
+-   **Authentication:** Required (Bearer Token).
+
+#### Path Parameters
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | string | The ID of the chat session to retrieve. |
+
+#### Query Parameters
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `email` | string | Yes | The user's email address. Required for HMAC validation to ensure the user is authorized to view this chat. |
+
+#### Example Request (using `curl`)
+```bash
+curl -X GET \
+  'https://support.msdnoff365.tk/api/client/live/chat/chat-session-xyz-123?email=user@example.com' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>'
+```
+
+#### Success Response
+
+A full chat session object, including all messages.
+
+```json
+{
+  "status": "success",
+  "message": "Chat session retrieved successfully.",
+  "data": {
+    "id": "chat-session-xyz-123",
+    "customer": {
+        "name": "John Doe",
+        "email": "user@example.com",
+        "auth_token": "...",
+        "avatarUrl": "...",
+        "planId": "Premium Plan",
+        "expiredAt": "2025-01-01",
+        "createdAt": "..."
+    },
+    "status": "active",
+    "messages": [
+      {
+        "id": "msg-abc-123",
+        "sender": "customer",
+        "content": "Hi, I have a quick question!",
+        "timestamp": "2023-10-27T10:00:00.000Z"
+      },
+      {
+        "id": "msg-xyz-789",
+        "sender": "agent",
+        "content": "Of course, how can I help?",
+        "timestamp": "2023-10-27T10:01:00.000Z"
+      }
+    ]
   },
   "error": null
 }
