@@ -353,32 +353,31 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
 }
 
 
-function ChatPageContent() {
+function ChatPageContent({ chatId }: { chatId: string | null }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const chatIdFromUrl = searchParams.get('id');
 
   const [allChats, setAllChats] = useState(() => getActiveChats());
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(chatId);
 
   useEffect(() => {
     const validChatIds = allChats.map(c => c.id);
+    let newSelectedId = selectedChatId;
 
-    let newSelectedId: string | null = null;
+    if (newSelectedId && !validChatIds.includes(newSelectedId)) {
+        newSelectedId = null;
+    }
 
-    if (chatIdFromUrl && validChatIds.includes(chatIdFromUrl)) {
-        newSelectedId = chatIdFromUrl;
-    } else if (allChats.length > 0) {
+    if (!newSelectedId && allChats.length > 0) {
         newSelectedId = allChats[0].id;
     }
 
     setSelectedChatId(newSelectedId);
     
-    if (newSelectedId && newSelectedId !== chatIdFromUrl) {
+    if (newSelectedId && newSelectedId !== selectedChatId) {
       router.replace(`/chat?id=${newSelectedId}`);
     }
 
-  }, [chatIdFromUrl, allChats, router]);
+  }, [chatId, allChats, router, selectedChatId]);
   
   const selectedChat = useMemo(
     () => (selectedChatId ? getChatById(selectedChatId) : null),
@@ -387,6 +386,7 @@ function ChatPageContent() {
   
   const handleSelectChat = (id: string) => {
     router.push(`/chat?id=${id}`, { scroll: false });
+    setSelectedChatId(id);
   }
 
   const handleChatClose = (closedChatId: string) => {
@@ -395,9 +395,12 @@ function ChatPageContent() {
 
     if (selectedChatId === closedChatId) {
       if (updatedChats.length > 0) {
-        router.replace(`/chat?id=${updatedChats[0].id}`);
+        const newId = updatedChats[0].id;
+        router.replace(`/chat?id=${newId}`);
+        setSelectedChatId(newId);
       } else {
         router.replace('/chat');
+        setSelectedChatId(null);
       }
     }
   };
@@ -423,10 +426,16 @@ function ChatPageContent() {
   )
 }
 
+function Page() {
+  const searchParams = useSearchParams();
+  const chatId = searchParams.get('id');
+  return <ChatPageContent chatId={chatId} />;
+}
+
 export default function ChatPage() {
   return (
     <Suspense fallback={<div className="flex-1 p-4">Loading...</div>}>
-      <ChatPageContent />
+      <Page />
     </Suspense>
   )
 }
