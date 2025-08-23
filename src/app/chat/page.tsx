@@ -356,27 +356,29 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
 function ChatPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const chatIdFromUrl = searchParams.get('id');
+
   const [allChats, setAllChats] = useState(() => getActiveChats());
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    const chatIdFromUrl = searchParams.get('id');
     const validChatIds = allChats.map(c => c.id);
 
+    let newSelectedId: string | null = null;
+
     if (chatIdFromUrl && validChatIds.includes(chatIdFromUrl)) {
-      if (selectedChatId !== chatIdFromUrl) {
-          setSelectedChatId(chatIdFromUrl);
-      }
+        newSelectedId = chatIdFromUrl;
     } else if (allChats.length > 0) {
-      const newSelectedId = allChats[0].id;
-      setSelectedChatId(newSelectedId);
-      router.replace(`/chat?id=${newSelectedId}`);
-    } else {
-        if(selectedChatId !== null) {
-            setSelectedChatId(null);
-        }
+        newSelectedId = allChats[0].id;
     }
-  }, [searchParams, allChats, router, selectedChatId]);
+
+    setSelectedChatId(newSelectedId);
+    
+    if (newSelectedId && newSelectedId !== chatIdFromUrl) {
+      router.replace(`/chat?id=${newSelectedId}`);
+    }
+
+  }, [chatIdFromUrl, allChats, router]);
   
   const selectedChat = useMemo(
     () => (selectedChatId ? getChatById(selectedChatId) : null),
@@ -384,7 +386,6 @@ function ChatPageContent() {
   );
   
   const handleSelectChat = (id: string) => {
-    setSelectedChatId(id);
     router.push(`/chat?id=${id}`, { scroll: false });
   }
 
@@ -394,8 +395,7 @@ function ChatPageContent() {
 
     if (selectedChatId === closedChatId) {
       if (updatedChats.length > 0) {
-        const newSelectedId = updatedChats[0].id;
-        router.replace(`/chat?id=${newSelectedId}`);
+        router.replace(`/chat?id=${updatedChats[0].id}`);
       } else {
         router.replace('/chat');
       }
@@ -430,6 +430,5 @@ export default function ChatPage() {
     </Suspense>
   )
 }
-
 
     
