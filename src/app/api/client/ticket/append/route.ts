@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { addMessageToTicketByCustomer, getTicketById } from '@/lib/data';
-import { validateHmac } from '@/lib/auth';
+import { validateDomain, validateHmac } from '@/lib/auth';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
 const corsHeaders = {
@@ -19,6 +19,11 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const isDomainAllowed = await validateDomain(request);
+    if (!isDomainAllowed) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden: Invalid origin' }, { status: 403, headers: corsHeaders });
+    }
+
     const { fields, files } = await parseForm(request);
 
     const ticketId = getField(fields, 'ticket_id');
