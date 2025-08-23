@@ -140,6 +140,7 @@ export const updateTicketStatus = (ticketId: string, status: Ticket['status']) =
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
+export const getTicketsByEmail = (email: string) => tickets.filter(t => t.customer.email === email);
 export const getUserByEmail = (email: string) => users.find(u => u.email === email);
 export const getOpenTickets = () => tickets.filter(t => t.status !== 'closed');
 export const getChatSessions = () => chatSessions;

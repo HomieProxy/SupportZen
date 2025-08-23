@@ -15,13 +15,14 @@ The hash is generated from the user's `email` and a pre-shared secret key.
 
 ## Endpoints
 
-All endpoints expect a `Content-Type` of `multipart/form-data`.
 
 ### 1. Create a New Support Ticket
 
 This endpoint creates a new support ticket.
 
 -   **Endpoint:** `POST /api/client/ticket/create`
+-   **Method:** `POST`
+-   **Content-Type:** `multipart/form-data`
 -   **Authentication:** Required (Bearer Token).
 
 #### Request Form Data
@@ -68,6 +69,8 @@ curl -X POST \
 This endpoint adds a new message from the customer to an existing ticket.
 
 -   **Endpoint:** `POST /api/client/ticket/append`
+-   **Method:** `POST`
+-   **Content-Type:** `multipart/form-data`
 -   **Authentication:** Required (Bearer Token).
 
 #### Request Form Data
@@ -100,6 +103,120 @@ curl -X POST \
   "data": {
     "ticketId": "TKT-001",
     "messageId": "msg-def-789"
+  },
+  "error": null
+}
+```
+---
+
+### 3. List User's Tickets
+
+This endpoint retrieves a list of all tickets for a specific user.
+
+-   **Endpoint:** `GET /api/client/ticket/list`
+-   **Method:** `GET`
+-   **Authentication:** Required (Bearer Token).
+
+#### Query Parameters
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `email` | string | Yes | The user's email address, used for HMAC generation and to look up tickets. |
+
+#### Example Request (using `curl`)
+
+```bash
+curl -X GET \
+  'https://support.msdnoff365.tk/api/client/ticket/list?email=user@example.com' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>'
+```
+
+#### Success Response
+
+A JSON array of ticket objects.
+
+```json
+{
+  "status": "success",
+  "message": "Tickets retrieved successfully.",
+  "data": [
+    {
+      "id": "TKT-001",
+      "subject": "My account is locked...",
+      "status": "closed",
+      "createdAt": "2023-10-27T10:00:00.000Z",
+      "lastUpdate": "2023-10-28T12:00:00.000Z"
+    },
+    {
+      "id": "TKT-002",
+      "subject": "Question about billing...",
+      "status": "open",
+      "createdAt": "2023-10-29T11:00:00.000Z",
+      "lastUpdate": "2023-10-29T11:00:00.000Z"
+    }
+  ],
+  "error": null
+}
+```
+
+---
+
+### 4. View a Single Ticket
+
+This endpoint retrieves the full details and message history for a single ticket.
+
+-   **Endpoint:** `GET /api/client/ticket/{id}`
+-   **Method:** `GET`
+-   **Authentication:** Required (Bearer Token).
+
+#### Path Parameters
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | string | The ID of the ticket to retrieve. |
+
+#### Query Parameters
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `email` | string | Yes | The user's email address. Required for HMAC validation to ensure the user is authorized to view this ticket. |
+
+#### Example Request (using `curl`)
+```bash
+curl -X GET \
+  'https://support.msdnoff365.tk/api/client/ticket/TKT-001?email=user@example.com' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>'
+```
+
+#### Success Response
+
+A full ticket object, including all messages.
+
+```json
+{
+  "status": "success",
+  "message": "Ticket retrieved successfully.",
+  "data": {
+    "id": "TKT-001",
+    "subject": "My account is locked and I cannot log in.",
+    "customer": {
+      "name": "John Doe",
+      "email": "user@example.com"
+    },
+    "status": "closed",
+    "createdAt": "2023-10-27T10:00:00.000Z",
+    "lastUpdate": "2023-10-28T12:00:00.000Z",
+    "messages": [
+      {
+        "id": "msg-abc-123",
+        "sender": "customer",
+        "content": "My account is locked and I cannot log in.",
+        "timestamp": "2023-10-27T10:00:00.000Z"
+      },
+      {
+        "id": "msg-xyz-789",
+        "sender": "agent",
+        "content": "I have reset your password. Please check your email.",
+        "timestamp": "2023-10-28T12:00:00.000Z"
+      }
+    ]
   },
   "error": null
 }
