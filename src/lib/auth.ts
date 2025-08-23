@@ -1,3 +1,4 @@
+
 'use server';
 import { getUserByEmail } from './data';
 import crypto from 'crypto';
@@ -59,28 +60,38 @@ export async function logout() {
     return Promise.resolve();
 }
 
-// This function is no longer HMAC-based but a simple bearer token check.
-// I'm renaming it for clarity, but keeping the `validateHmac` name in the API routes
-// to minimize breaking changes during this refactor.
+// This function validates that the incoming request is from an authorized client
+// by checking a shared secret passed as a Bearer token.
 export async function validateHmac(request: Request, email: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.error("Validation failed: Missing or malformed Authorization header.");
         return false;
     }
     
     const clientKey = authHeader.split(' ')[1];
     if (!clientKey) {
+        console.error("Validation failed: Bearer token is empty.");
         return false;
     }
     
     const serverKey = getSharedSecret();
 
-    // Use crypto.timingSafeEqual to prevent timing attacks
+    // Use crypto.timingSafeEqual to prevent timing attacks.
+    // Both buffers must be of the same length for this to work.
     try {
-        return crypto.timingSafeEqual(Buffer.from(clientKey), Buffer.from(serverKey));
-    } catch {
-        // This will catch errors if the buffer lengths are different, which is expected
-        // for non-matching keys.
+        const clientBuffer = Buffer.from(clientKey, 'utf-8');
+        const serverBuffer = Buffer.from(serverKey, 'utf-8');
+
+        if (clientBuffer.length !== serverBuffer.length) {
+            console.error("Validation failed: Token length mismatch.");
+            return false;
+        }
+
+        return crypto.timingSafeEqual(clientBuffer, serverBuffer);
+    } catch (e) {
+        console.error("An error occurred during token validation:", e);
+        // This will catch errors if the buffers are invalid for some reason.
         return false;
     }
 };
