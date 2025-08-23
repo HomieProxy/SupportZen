@@ -1,3 +1,4 @@
+
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
 import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
 import { randomUUID } from 'crypto';
@@ -10,19 +11,21 @@ const findOrAddUser = (payload: ClientWebhookPayload): User => {
   let user = users.find(u => u.email === payload.email);
 
   if (user) {
-    // Update user details if they've changed. The `name` from payload is the plan name.
+    // Update user details if they've changed.
     user.name = payload.name || user.name;
     user.planId = payload.name || user.planId;
     user.auth_token = payload.auth_token || user.auth_token;
+    user.uuid = payload.uuid || user.uuid;
   } else {
     // Create a new user if they don't exist
     const displayName = payload.name || payload.email.split('@')[0];
     const newUser: User = {
       auth_token: payload.auth_token || `auth-token-${randomUUID()}`,
       email: payload.email,
+      uuid: payload.uuid,
       name: displayName,
       avatarUrl: `https://placehold.co/100x100.png`,
-      planId: displayName, // Use the name from payload as the plan identifier
+      planId: displayName,
       expiredAt: payload.expired_at ? format(fromUnixTime(payload.expired_at), 'yyyy-MM-dd') : 'N/A',
       createdAt: payload.created_at ? formatISO(fromUnixTime(payload.created_at)) : formatISO(new Date()),
     };

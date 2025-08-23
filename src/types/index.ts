@@ -1,7 +1,9 @@
+
 export interface User {
   auth_token: string;
   name: string;
   email: string;
+  uuid: string; // Add uuid for HMAC
   avatarUrl: string;
   planId: string;
   expiredAt: string;
@@ -40,11 +42,12 @@ export interface ChatSession {
 export interface ClientWebhookPayload {
   // User information
   email: string;
+  uuid: string; // Add uuid for HMAC
   name?: string;
   created_at: number;
   expired_at?: number | null;
   plan_id?: number | string | null;
-  auth_token?: string;
+  auth_token?: string; // This will now be the HMAC hash
   
   // Support request information
   message: string;

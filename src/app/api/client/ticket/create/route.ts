@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createTicketFromWebhook } from '@/lib/data';
 import type { ClientWebhookPayload } from '@/types';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
-import { validateDomain } from '@/lib/auth';
+import { validateDomain, validateHmac } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,22 +28,26 @@ export async function POST(request: Request) {
     const { fields, files } = await parseForm(request);
 
     const email = getField(fields, 'email');
+    const uuid = getField(fields, 'uuid');
     const message = getField(fields, 'message');
     const createdAt = getField(fields, 'created_at');
 
-    if (!email || !message || !createdAt) {
-      return NextResponse.json({ status: 'error', message: 'Missing required fields: email, message, and created_at' }, { status: 400, headers: corsHeaders });
+    if (!email || !uuid || !message || !createdAt) {
+      return NextResponse.json({ status: 'error', message: 'Missing required fields: email, uuid, message, and created_at' }, { status: 400, headers: corsHeaders });
+    }
+    
+    const isAuthorized = await validateHmac(request, email, uuid);
+    if (!isAuthorized) {
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid signature' }, { status: 401, headers: corsHeaders });
     }
 
     const authToken = request.headers.get('Authorization')?.split(' ')[1];
-    if (!authToken) {
-        return NextResponse.json({ status: 'error', message: 'Missing Authorization token' }, { status: 401, headers: corsHeaders });
-    }
     
     const imageUrl = getPublicUrl(files.image);
 
     const payload: ClientWebhookPayload = {
       email,
+      uuid,
       message,
       created_at: parseInt(createdAt, 10),
       auth_token: authToken,

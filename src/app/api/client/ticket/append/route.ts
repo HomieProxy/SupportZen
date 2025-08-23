@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { addMessageToTicketByCustomer, getTicketById } from '@/lib/data';
-import { validateClientRequest } from '@/lib/auth';
+import { validateHmac } from '@/lib/auth';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
 const corsHeaders = {
@@ -29,11 +29,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'error', message: 'Missing required fields: ticket_id, email, and message' }, { status: 400, headers: corsHeaders });
     }
     
-    const isAuthorized = await validateClientRequest(request, email);
-    if (!isAuthorized) {
-        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid token' }, { status: 401, headers: corsHeaders });
-    }
-    
     const ticket = getTicketById(ticketId);
     if (!ticket) {
         return NextResponse.json({ status: 'error', message: 'Ticket not found' }, { status: 404, headers: corsHeaders });
@@ -42,6 +37,12 @@ export async function POST(request: Request) {
     // The email in the payload MUST match the email associated with the ticket
     if (ticket.customer.email !== email) {
         return NextResponse.json({ status: 'error', message: 'Email does not match ticket owner' }, { status: 403, headers: corsHeaders });
+    }
+
+    // Now validate the HMAC signature
+    const isAuthorized = await validateHmac(request, ticket.customer.email, ticket.customer.uuid);
+    if (!isAuthorized) {
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid signature' }, { status: 401, headers: corsHeaders });
     }
 
     const imageUrl = getPublicUrl(files.image);

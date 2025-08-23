@@ -2,15 +2,12 @@
 'use server';
 import crypto from 'crypto';
 import { getAllowDomains as getConfiguredDomains } from './config';
-import { getUserByEmail } from './data';
 
-// This is a stand-in for a secure way to get a shared secret.
-// In a real application, this should come from a secure source like environment variables.
-const getSharedSecret = () => {
+const getSharedSecret = (): string => {
     const secret = process.env.CLIENT_API_SECRET_KEY;
     if (!secret) {
-        // For development, we can use a default, but this is not secure for production.
-        console.warn("CLIENT_API_SECRET_KEY is not set. Using a default, insecure key for legacy functions if needed.");
+        console.error("FATAL: CLIENT_API_SECRET_KEY is not set in environment variables.");
+        // In a real app, you might want to throw an error to prevent insecure operation.
         return "default_insecure_secret_key_for_development_only";
     }
     return secret;
@@ -36,7 +33,6 @@ export async function login(email: string, password: string) {
             throw new Error('Access denied. This application is for administrators only.');
         }
         
-        // This is a client-side only operation for now.
         if (typeof window !== 'undefined') {
             localStorage.setItem('gemini_api_key', result.data.gemini_api_key);
         }
@@ -56,51 +52,47 @@ export async function login(email: string, password: string) {
 }
 
 export async function logout() {
-    // This function can be expanded to call a logout endpoint if one exists
-    // For now, it's a placeholder as the client handles state removal
     return Promise.resolve();
 }
 
 /**
- * Validates that an incoming request is from a legitimate client by checking
- * the provided Bearer token against the token stored for that user.
+ * Validates an incoming request by comparing its HMAC signature with a newly generated one.
  * @param request The incoming Request object.
  * @param email The email of the user making the request.
+ * @param uuid The user's unique identifier.
  * @returns A boolean indicating if the request is authorized.
  */
-export async function validateClientRequest(request: Request, email: string): Promise<boolean> {
+export async function validateHmac(request: Request, email: string, uuid: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         console.error("Validation failed: Missing or malformed Authorization header.");
         return false;
     }
     
-    const clientToken = authHeader.split(' ')[1];
-    if (!clientToken) {
+    const clientHmac = authHeader.split(' ')[1];
+    if (!clientHmac) {
         console.error("Validation failed: Bearer token is empty.");
         return false;
     }
-    
-    const user = getUserByEmail(email);
-    if (!user || !user.auth_token) {
-        console.error(`Validation failed: No user or stored token found for email: ${email}`);
-        return false;
-    }
 
-    const serverToken = user.auth_token;
+    // Re-create the HMAC on the server
+    const secret = getSharedSecret();
+    const data = `${email}${uuid}`;
+    const serverHmac = crypto.createHmac('sha256', secret).update(data).digest('hex');
 
     try {
-        const clientBuffer = Buffer.from(clientToken, 'utf-8');
-        const serverBuffer = Buffer.from(serverToken, 'utf-8');
+        // Use timingSafeEqual to prevent timing attacks
+        const clientBuffer = Buffer.from(clientHmac, 'hex');
+        const serverBuffer = Buffer.from(serverHmac, 'hex');
 
         if (clientBuffer.length !== serverBuffer.length) {
-            console.error("Validation failed: Token length mismatch.");
+            console.error("Validation failed: HMAC length mismatch.");
             return false;
         }
 
         return crypto.timingSafeEqual(clientBuffer, serverBuffer);
     } catch (e) {
-        console.error("An error occurred during token validation:", e);
+        console.error("An error occurred during HMAC validation:", e);
         return false;
     }
 };
@@ -123,6 +115,7 @@ export async function validateDomain(request: Request): Promise<boolean> {
     const allowedDomains = await getAllowDomains();
 
     if (allowedDomains.length === 0) {
+        // This is a fallback for development. In production, this should be a hard failure.
         console.warn("No allowed domains configured. Allowing all domains for development, but this is insecure for production.");
         return true;
     }
