@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft, ShieldCheck, Trash2, PlusCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { clearClosedData } from '@/lib/data';
-import { getAllowDomains } from '@/lib/auth';
+import { getSettings, updateSettings } from '@/app/actions/settings';
+
 
 export default function SettingsPage() {
     const { toast } = useToast();
@@ -24,6 +25,9 @@ export default function SettingsPage() {
     const [purgePeriod, setPurgePeriod] = useState<string>('7d');
     const [customDate, setCustomDate] = useState<Date | undefined>();
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+    const [newDomain, setNewDomain] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const storedKey = localStorage.getItem('gemini_api_key');
@@ -31,13 +35,55 @@ export default function SettingsPage() {
             setApiKey(storedKey);
         }
         
-        async function fetchDomains() {
-            const domains = await getAllowDomains();
-            setAllowedDomains(domains);
+        async function fetchSettings() {
+            try {
+                setIsLoading(true);
+                const settings = await getSettings();
+                setAllowedDomains(settings.allowedDomains || []);
+            } catch (error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error loading settings',
+                    description: 'Could not fetch the current settings from the server.'
+                });
+            } finally {
+                setIsLoading(false);
+            }
         }
-        fetchDomains();
+        fetchSettings();
 
-    }, []);
+    }, [toast]);
+    
+    const handleAddDomain = () => {
+        if (newDomain && !allowedDomains.includes(newDomain)) {
+            setAllowedDomains([...allowedDomains, newDomain.trim()]);
+            setNewDomain('');
+        }
+    }
+
+    const handleRemoveDomain = (domainToRemove: string) => {
+        setAllowedDomains(allowedDomains.filter(d => d !== domainToRemove));
+    }
+
+    const handleSaveSettings = async () => {
+        setIsSaving(true);
+        try {
+            await updateSettings({ allowedDomains });
+            toast({
+                title: 'Settings Saved',
+                description: 'Your allowed domains have been updated successfully.',
+            });
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Error Saving Settings',
+                description: 'Could not save your settings. Please try again.',
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
 
     const handleSaveApiKey = () => {
         localStorage.setItem('gemini_api_key', apiKey);
@@ -146,31 +192,52 @@ export default function SettingsPage() {
       <Card>
           <CardHeader>
               <CardTitle>Allowed Domains for API Access</CardTitle>
-              <CardDescription>These are the only domains that can create new tickets or chats via the client API.</CardDescription>
+              <CardDescription>Manage the domains that can create new tickets or chats via the client API. Use <code className="font-mono bg-muted p-1 rounded-sm">*.example.com</code> for wildcards.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {allowedDomains.length > 0 ? (
-                 <div className="space-y-2">
-                    {allowedDomains.map(domain => (
-                        <div key={domain} className="flex items-center gap-2 text-sm p-2 bg-muted rounded-md">
-                           <ShieldCheck className="h-4 w-4 text-green-500"/>
-                           <span className="font-mono">{domain}</span>
-                        </div>
-                    ))}
-                 </div>
+            {isLoading ? (
+                <p>Loading domains...</p>
             ) : (
-                <p className="text-sm text-muted-foreground">No domains configured. All origins are currently allowed.</p>
+                 <>
+                    <div className="space-y-2">
+                        {allowedDomains.length > 0 ? (
+                             allowedDomains.map(domain => (
+                                <div key={domain} className="flex items-center justify-between gap-2 text-sm p-2 bg-muted rounded-md">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck className="h-4 w-4 text-green-500"/>
+                                        <span className="font-mono">{domain}</span>
+                                    </div>
+                                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveDomain(domain)}>
+                                        <Trash2 className="h-4 w-4 text-red-500"/>
+                                   </Button>
+                                </div>
+                            ))
+                        ) : (
+                             <p className="text-sm text-muted-foreground text-center py-4">No domains configured. All origins are currently allowed.</p>
+                        )}
+                     </div>
+                    <div className="flex gap-2">
+                        <Input 
+                            placeholder="e.g., example.com or *.mydomain.com"
+                            value={newDomain}
+                            onChange={(e) => setNewDomain(e.target.value)}
+                             onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddDomain();
+                                }
+                            }}
+                        />
+                        <Button variant="outline" onClick={handleAddDomain}><PlusCircle className="mr-2" /> Add</Button>
+                    </div>
+                 </>
             )}
-
-            <div className="flex items-start gap-2 p-2 rounded-lg border bg-muted/50 text-sm mt-4">
-                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-                <div className="flex-1">
-                    <p className="text-muted-foreground">
-                        This list is read-only. To manage allowed domains, you must create or edit a <code className="font-mono bg-background p-1 rounded-sm">.env.local</code> file in the project root and add your domains there (e.g., <code className="font-mono bg-background p-1 rounded-sm">ALLOWED_DOMAINS=example.com,*.your-domain.com</code>).
-                    </p>
-                </div>
-            </div>
           </CardContent>
+          <div className="flex justify-end p-6 pt-0">
+             <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
       </Card>
       
        <Card>

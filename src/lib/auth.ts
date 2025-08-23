@@ -1,6 +1,7 @@
 
 'use server';
 import crypto from 'crypto';
+import { getAllowDomains as getConfiguredDomains } from './config';
 
 // This is a stand-in for a secure way to get a shared secret.
 // In a real application, this should come from a secure source like environment variables.
@@ -97,16 +98,11 @@ export async function validateClientRequest(request: Request): Promise<boolean> 
 };
 
 /**
- * Retrieves the list of allowed domains from environment variables.
- * This function is safe to call on the client because it only exposes the env var.
+ * Retrieves the list of allowed domains from the config file.
  * @returns A promise that resolves to an array of allowed domain strings.
  */
 export async function getAllowDomains(): Promise<string[]> {
-    const allowedDomainsEnv = process.env.ALLOWED_DOMAINS;
-    if (!allowedDomainsEnv) {
-        return [];
-    }
-    return allowedDomainsEnv.split(',').map(d => d.trim()).filter(Boolean);
+    return await getConfiguredDomains();
 }
 
 /**
@@ -119,7 +115,7 @@ export async function validateDomain(request: Request): Promise<boolean> {
     const allowedDomains = await getAllowDomains();
 
     if (allowedDomains.length === 0) {
-        console.warn("ALLOWED_DOMAINS is not set in .env. Allowing all domains for development, but this is insecure for production.");
+        console.warn("ALLOWED_DOMAINS is not set. Allowing all domains for development, but this is insecure for production.");
         return true;
     }
 
