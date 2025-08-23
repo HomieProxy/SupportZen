@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft, ShieldCheck, Trash2, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, ArrowLeft, ShieldCheck, Trash2, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ export default function SettingsPage() {
     const { toast } = useToast();
     const [geminiApiKey, setGeminiApiKey] = useState('');
     const [clientApiSecretKey, setClientApiSecretKey] = useState('');
+    const [isSecretKeyVisible, setIsSecretKeyVisible] = useState(false);
     const [purgePeriod, setPurgePeriod] = useState<string>('7d');
     const [customDate, setCustomDate] = useState<Date | undefined>();
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
@@ -166,14 +167,25 @@ export default function SettingsPage() {
           <CardContent className="space-y-6">
               <div className="space-y-2">
                   <Label htmlFor="clientApiSecretKey">Client API Secret Key</Label>
-                   <div className="flex gap-2">
+                   <div className="relative">
                     <Input 
                         id="clientApiSecretKey"
-                        type="password"
+                        type={isSecretKeyVisible ? 'text' : 'password'}
                         placeholder="Enter a strong, unique secret key"
                         value={clientApiSecretKey}
                         onChange={(e) => setClientApiSecretKey(e.target.value)}
+                        className="pr-10"
                     />
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                        onClick={() => setIsSecretKeyVisible(!isSecretKeyVisible)}
+                    >
+                        {isSecretKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <span className="sr-only">Toggle secret key visibility</span>
+                    </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
                       This secret key is used to generate HMAC signatures for securing your client-side API requests. It must match the key used in your client application.
