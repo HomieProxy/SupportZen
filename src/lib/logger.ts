@@ -1,3 +1,4 @@
+
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR';
 
 export interface LogEntry {
@@ -45,6 +46,10 @@ export async function addLog(level: LogLevel, message: string, details?: object)
 
 export async function getLogs(): Promise<LogEntry[]> {
   return [...logs];
+}
+
+export async function getLogsCount(): Promise<number> {
+    return logs.length;
 }
 
 export async function clearLogs(): Promise<void> {

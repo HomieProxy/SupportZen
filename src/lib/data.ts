@@ -2,6 +2,7 @@
 import { User, Ticket, ChatSession, ChatMessage, ClientWebhookPayload } from '@/types';
 import { subDays, formatISO, fromUnixTime, format, isBefore } from 'date-fns';
 import { randomUUID } from 'crypto';
+import { getLogsCount as getLogCountFromLogger } from './logger';
 
 let users: User[] = [];
 let tickets: Ticket[] = [];
@@ -189,3 +190,10 @@ export const clearClosedData = (cutoffDate: Date) => {
     
     chatSessions = closedChatsPurged;
 };
+
+// This is a bit of a hack since we are not using a real DB.
+// The "actions" can't import the logger directly, so we expose the logger functions
+// through the data module, which is available on both client and server.
+export async function getLogsCount(): Promise<number> {
+    return getLogCountFromLogger();
+}

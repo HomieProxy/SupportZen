@@ -18,9 +18,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getActiveChats, getOpenTickets, getTickets, getChatSessions } from '@/lib/data';
+import { getActiveChats, getOpenTickets, getTickets, getChatSessions, getLogsCount } from '@/lib/data';
 import { Ticket } from '@/types';
-import { MessageSquare, Ticket as TicketIcon, Users } from 'lucide-react';
+import { MessageSquare, Ticket as TicketIcon, Users, ShieldQuestion } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [allChats, setAllChats] = useState(getChatSessions());
   const [activeChats, setActiveChats] = useState(getActiveChats());
   const [openTickets, setOpenTickets] = useState(getOpenTickets());
+  const [logCount, setLogCount] = useState(0);
   
   // This effect will re-fetch data if the user navigates away and back,
   // ensuring the dashboard is up-to-date. A more robust solution might
@@ -42,6 +43,7 @@ export default function Dashboard() {
         setOpenTickets(getOpenTickets());
         setAllTickets(getTickets());
         setAllChats(getChatSessions());
+        getLogsCount().then(setLogCount);
     }, 1000); // Check for updates every second
     return () => clearInterval(interval);
   }, []);
@@ -74,7 +76,7 @@ export default function Dashboard() {
       <h2 className="text-3xl font-bold tracking-tight font-headline">
         Dashboard
       </h2>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Link href="/tickets">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -127,6 +129,20 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+         <Link href="/logs">
+            <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">System Logs</CardTitle>
+                <ShieldQuestion className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{logCount}</div>
+                <p className="text-xs text-muted-foreground">
+                Total entries logged
+                </p>
+            </CardContent>
+            </Card>
+        </Link>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">

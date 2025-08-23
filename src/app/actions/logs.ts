@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getLogs as apiGetLogs, clearLogs as apiClearLogs, LogEntry } from '@/lib/logger';
+import { getLogs as apiGetLogs, clearLogs as apiClearLogs, LogEntry, getLogsCount } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
 
 export async function getLogs(): Promise<LogEntry[]> {
