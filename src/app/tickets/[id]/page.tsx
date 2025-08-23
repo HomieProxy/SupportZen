@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getTicketById, addMessageToTicket, updateTicketStatus } from '@/lib/data';
 import { Ticket, ChatMessage, User } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -183,12 +183,9 @@ function TicketConversation({ ticket, onStatusChange, onNewMessage }: { ticket: 
   );
 }
 
-export default function TicketPage() {
-  const params = useParams();
-  const ticketId = params.id as string;
+export default function TicketPage({ params }: { params: { id: string } }) {
+  const ticketId = params.id;
   
-  // Use a key for the TicketConversation component to force a re-render
-  // when we manually update the data.
   const [renderKey, setRenderKey] = useState(Date.now());
   const { toast } = useToast();
   
