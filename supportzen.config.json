@@ -1,0 +1,4 @@
+{
+  "allowedDomains": [],
+  "clientApiSecretKey": "default_insecure_secret_key_for_development_only"
+}

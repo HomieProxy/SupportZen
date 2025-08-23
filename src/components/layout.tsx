@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -55,17 +56,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={defaultOpen}>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/" className="flex items-center gap-2">
-            <Icons.logo className="w-8 h-8" />
-            <span
-              className={cn(
-                "font-bold font-headline text-xl",
-                "group-data-[state=collapsed]:hidden group-data-[collapsible=icon]:hidden"
-              )}
-            >
-              SupportZen
-            </span>
-          </Link>
+          <span
+            className={cn(
+              "font-bold font-headline text-xl",
+              "group-data-[state=collapsed]:hidden group-data-[collapsible=icon]:hidden"
+            )}
+          >
+            Navigation
+          </span>
         </SidebarHeader>
         <SidebarContent>
           <MainNav />
@@ -74,8 +72,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
           <SidebarTrigger className="md:hidden" />
-          <div className="w-full flex-1">
-            {/* Can add breadcrumbs or page title here */}
+           <div className="w-full flex-1">
+             <Link href="/" className="flex items-center gap-2">
+                <Icons.logo className="w-8 h-8" />
+                <span className="font-bold font-headline text-xl hidden md:inline-block">
+                  SupportZen
+                </span>
+             </Link>
           </div>
           <UserNav />
         </header>
