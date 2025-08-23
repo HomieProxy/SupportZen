@@ -62,7 +62,7 @@ export async function logout() {
 
 // This function validates that the incoming request is from an authorized client
 // by checking a shared secret passed as a Bearer token.
-export async function validateHmac(request: Request, email: string): Promise<boolean> {
+export async function validateHmac(request: Request): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         console.error("Validation failed: Missing or malformed Authorization header.");
@@ -95,3 +95,4 @@ export async function validateHmac(request: Request, email: string): Promise<boo
         return false;
     }
 };
+
