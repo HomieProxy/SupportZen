@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { Home, Ticket, MessageSquare, Settings } from "lucide-react";
+import { Home, Ticket, MessageSquare, Settings, ShieldQuestion } from "lucide-react";
 
 const menuItems = [
   {
@@ -29,6 +29,11 @@ const menuItems = [
     href: "/settings",
     label: "Settings",
     icon: Settings,
+  },
+  {
+    href: "/logs",
+    label: "System Logs",
+    icon: ShieldQuestion,
   }
 ];
 

@@ -2,8 +2,10 @@
 import { NextResponse } from 'next/server';
 import { createTicketFromWebhook } from '@/lib/data';
 import type { ClientWebhookPayload } from '@/types';
-import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
+import { parseMultipartFormData } from '@/lib/api-helpers';
 import { validateDomain, validateHmac } from '@/lib/auth';
+import { addLog } from '@/lib/logger';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,43 +21,50 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const origin = request.headers.get('Origin') || 'Unknown';
   try {
     const isDomainAllowed = await validateDomain(request);
     if (!isDomainAllowed) {
+        await addLog('ERROR', `Domain not allowed for ticket creation: ${origin}`);
         return NextResponse.json({ status: 'error', message: 'Forbidden: Invalid origin' }, { status: 403, headers: corsHeaders });
     }
 
-    const { fields, files } = await parseForm(request);
+    const { fields, files } = await parseMultipartFormData(request);
 
-    const email = getField(fields, 'email');
-    const message = getField(fields, 'message');
-    const createdAt = getField(fields, 'created_at');
+    const email = fields.email;
+    const message = fields.message;
+    const createdAt = fields.created_at;
+
+    await addLog('INFO', `Received ticket create request from ${email}`, { fields });
 
     if (!email || !message || !createdAt) {
+      await addLog('WARN', `Ticket create request missing required fields`, { hasEmail: !!email, hasMessage: !!message, hasCreatedAt: !!createdAt });
       return NextResponse.json({ status: 'error', message: 'Missing required fields: email, message, and created_at' }, { status: 400, headers: corsHeaders });
     }
     
     const isAuthorized = await validateHmac(request, email);
     if (!isAuthorized) {
+        await addLog('ERROR', `Invalid HMAC for ticket creation from ${email}`);
         return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid signature' }, { status: 401, headers: corsHeaders });
     }
 
     const authToken = request.headers.get('Authorization')?.split(' ')[1];
-    
-    const imageUrl = getPublicUrl(files.image);
+    const imageUrl = files.image ? `/uploads/${files.image.filename}` : undefined;
 
     const payload: ClientWebhookPayload = {
       email,
       message,
       created_at: parseInt(createdAt, 10),
       auth_token: authToken,
-      name: getField(fields, 'name'),
-      plan_id: getField(fields, 'plan_id'),
-      expired_at: getField(fields, 'expired_at') ? parseInt(getField(fields, 'expired_at')!, 10) : undefined,
+      name: fields.name,
+      plan_id: fields.plan_id,
+      expired_at: fields.expired_at ? parseInt(fields.expired_at, 10) : undefined,
       image_url: imageUrl
     };
 
     const newTicket = createTicketFromWebhook(payload);
+    await addLog('INFO', `Successfully created ticket ${newTicket.id} for ${email}`);
+
 
     return NextResponse.json({
         status: 'success',
@@ -68,6 +77,7 @@ export async function POST(request: Request) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await addLog('ERROR', `Failed to create ticket from ${origin}: ${errorMessage}`, { stack: error instanceof Error ? error.stack : undefined });
     return NextResponse.json({ status: 'error', message: 'Failed to create ticket', error: errorMessage }, { status: 500, headers: corsHeaders });
   }
 }
