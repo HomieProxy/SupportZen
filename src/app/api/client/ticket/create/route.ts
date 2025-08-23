@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const message = fields.message;
     const createdAt = fields.created_at;
 
-    await addLog('INFO', `Received ticket create request from ${email}`, { fields });
+    await addLog('INFO', `Received ticket create request from ${email}`, { fields, files: Object.keys(files) });
 
     if (!email || !message || !createdAt) {
       await addLog('WARN', `Ticket create request missing required fields`, { hasEmail: !!email, hasMessage: !!message, hasCreatedAt: !!createdAt });

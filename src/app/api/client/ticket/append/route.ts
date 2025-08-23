@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const messageContent = fields.message;
     const email = fields.email;
 
-    await addLog('INFO', `Received ticket append request for ticket ${ticketId} from ${email}`, { fields });
+    await addLog('INFO', `Received ticket append request for ticket ${ticketId} from ${email}`, { fields, files: Object.keys(files) });
 
     if (!ticketId || !messageContent || !email) {
       await addLog('WARN', `Ticket append request missing required fields`, { ticketId, email, hasMessage: !!messageContent });
