@@ -59,8 +59,12 @@ export async function logout() {
     return Promise.resolve();
 }
 
-// This function validates that the incoming request is from an authorized client
-// by checking a shared secret passed as a Bearer token.
+/**
+ * Validates that an incoming request is from a legitimate client by checking
+ * a shared secret passed as a Bearer token.
+ * @param request The incoming Request object.
+ * @returns A boolean indicating if the request is authorized.
+ */
 export async function validateClientRequest(request: Request): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -76,8 +80,6 @@ export async function validateClientRequest(request: Request): Promise<boolean> 
     
     const serverKey = getSharedSecret();
 
-    // Use crypto.timingSafeEqual to prevent timing attacks.
-    // Both buffers must be of the same length for this to work.
     try {
         const clientBuffer = Buffer.from(clientKey, 'utf-8');
         const serverBuffer = Buffer.from(serverKey, 'utf-8');
@@ -90,7 +92,43 @@ export async function validateClientRequest(request: Request): Promise<boolean> 
         return crypto.timingSafeEqual(clientBuffer, serverBuffer);
     } catch (e) {
         console.error("An error occurred during token validation:", e);
-        // This will catch errors if the buffers are invalid for some reason.
         return false;
     }
 };
+
+/**
+ * Validates that the request's origin domain is in the allowed list.
+ * @param request The incoming Request object.
+ * @returns A boolean indicating if the origin is allowed.
+ */
+export async function validateDomain(request: Request): Promise<boolean> {
+    const origin = request.headers.get('Origin');
+    const allowedDomainsEnv = process.env.ALLOWED_DOMAINS;
+
+    if (!allowedDomainsEnv) {
+        console.warn("ALLOWED_DOMAINS is not set in .env. Allowing all domains for development, but this is insecure for production.");
+        return true;
+    }
+
+    if (!origin) {
+        console.warn("Validation failed: Request is missing 'Origin' header.");
+        return false; // Block requests without an origin
+    }
+
+    const allowedDomains = allowedDomainsEnv.split(',').map(d => d.trim()).filter(Boolean);
+    const requestHost = new URL(origin).hostname;
+
+    for (const pattern of allowedDomains) {
+        if (pattern.startsWith('*.')) {
+            const baseDomain = pattern.substring(2);
+            if (requestHost.endsWith(`.${baseDomain}`) || requestHost === baseDomain) {
+                return true;
+            }
+        } else if (pattern === requestHost) {
+            return true;
+        }
+    }
+
+    console.error(`Validation failed: Origin '${origin}' is not in the allowed list.`);
+    return false;
+}

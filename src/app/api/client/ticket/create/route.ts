@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createTicketFromWebhook } from '@/lib/data';
 import type { ClientWebhookPayload } from '@/types';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
+import { validateDomain } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +20,11 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const isDomainAllowed = await validateDomain(request);
+    if (!isDomainAllowed) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden: Invalid origin' }, { status: 403, headers: corsHeaders });
+    }
+
     const { fields, files } = await parseForm(request);
 
     const email = getField(fields, 'email');
