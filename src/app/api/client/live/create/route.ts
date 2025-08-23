@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     }
 
     const authToken = request.headers.get('Authorization')?.split(' ')[1];
+    if (!authToken) {
+        return NextResponse.json({ status: 'error', message: 'Missing Authorization token' }, { status: 401, headers: corsHeaders });
+    }
 
     const imageUrl = getPublicUrl(files.image);
 

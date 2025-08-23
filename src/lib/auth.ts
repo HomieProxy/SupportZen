@@ -2,6 +2,7 @@
 'use server';
 import crypto from 'crypto';
 import { getAllowDomains as getConfiguredDomains } from './config';
+import { getUserByEmail } from './data';
 
 // This is a stand-in for a secure way to get a shared secret.
 // In a real application, this should come from a secure source like environment variables.
@@ -9,7 +10,7 @@ const getSharedSecret = () => {
     const secret = process.env.CLIENT_API_SECRET_KEY;
     if (!secret) {
         // For development, we can use a default, but this is not secure for production.
-        console.warn("CLIENT_API_SECRET_KEY is not set. Using a default, insecure key.");
+        console.warn("CLIENT_API_SECRET_KEY is not set. Using a default, insecure key for legacy functions if needed.");
         return "default_insecure_secret_key_for_development_only";
     }
     return secret;
@@ -62,28 +63,35 @@ export async function logout() {
 
 /**
  * Validates that an incoming request is from a legitimate client by checking
- * a shared secret passed as a Bearer token.
+ * the provided Bearer token against the token stored for that user.
  * @param request The incoming Request object.
+ * @param email The email of the user making the request.
  * @returns A boolean indicating if the request is authorized.
  */
-export async function validateClientRequest(request: Request): Promise<boolean> {
+export async function validateClientRequest(request: Request, email: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         console.error("Validation failed: Missing or malformed Authorization header.");
         return false;
     }
     
-    const clientKey = authHeader.split(' ')[1];
-    if (!clientKey) {
+    const clientToken = authHeader.split(' ')[1];
+    if (!clientToken) {
         console.error("Validation failed: Bearer token is empty.");
         return false;
     }
     
-    const serverKey = getSharedSecret();
+    const user = getUserByEmail(email);
+    if (!user || !user.auth_token) {
+        console.error(`Validation failed: No user or stored token found for email: ${email}`);
+        return false;
+    }
+
+    const serverToken = user.auth_token;
 
     try {
-        const clientBuffer = Buffer.from(clientKey, 'utf-8');
-        const serverBuffer = Buffer.from(serverKey, 'utf-8');
+        const clientBuffer = Buffer.from(clientToken, 'utf-8');
+        const serverBuffer = Buffer.from(serverToken, 'utf-8');
 
         if (clientBuffer.length !== serverBuffer.length) {
             console.error("Validation failed: Token length mismatch.");
@@ -115,16 +123,15 @@ export async function validateDomain(request: Request): Promise<boolean> {
     const allowedDomains = await getAllowDomains();
 
     if (allowedDomains.length === 0) {
-        console.warn("ALLOWED_DOMAINS is not set. Allowing all domains for development, but this is insecure for production.");
+        console.warn("No allowed domains configured. Allowing all domains for development, but this is insecure for production.");
         return true;
     }
 
     if (!origin) {
-        console.warn("Validation failed: Request is missing 'Origin' header.");
-        return false; // Block requests without an origin
+        console.warn("Validation failed: Request is missing 'Origin' header. Blocking request.");
+        return false;
     }
 
-    
     const requestHost = new URL(origin).hostname;
 
     for (const pattern of allowedDomains) {

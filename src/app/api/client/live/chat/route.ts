@@ -19,11 +19,6 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const isAuthorized = await validateClientRequest(request);
-    if (!isAuthorized) {
-        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid client secret' }, { status: 401, headers: corsHeaders });
-    }
-    
     const { fields, files } = await parseForm(request);
 
     const chatId = getField(fields, 'chat_id');
@@ -32,6 +27,11 @@ export async function POST(request: Request) {
 
     if (!chatId || !messageContent || !email) {
       return NextResponse.json({ status: 'error', message: 'Missing required fields: chat_id, message, and email' }, { status: 400, headers: corsHeaders });
+    }
+    
+    const isAuthorized = await validateClientRequest(request, email);
+    if (!isAuthorized) {
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid token' }, { status: 401, headers: corsHeaders });
     }
     
     const chat = getChatById(chatId);
