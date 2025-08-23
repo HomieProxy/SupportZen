@@ -1,6 +1,5 @@
 
 'use server';
-import { getUserByEmail } from './data';
 import crypto from 'crypto';
 
 // This is a stand-in for a secure way to get a shared secret.
@@ -62,7 +61,7 @@ export async function logout() {
 
 // This function validates that the incoming request is from an authorized client
 // by checking a shared secret passed as a Bearer token.
-export async function validateHmac(request: Request): Promise<boolean> {
+export async function validateClientRequest(request: Request): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         console.error("Validation failed: Missing or malformed Authorization header.");
@@ -95,4 +94,3 @@ export async function validateHmac(request: Request): Promise<boolean> {
         return false;
     }
 };
-

@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { addMessageToChat, getChatById } from '@/lib/data';
-import { validateHmac } from '@/lib/auth';
+import { validateClientRequest } from '@/lib/auth';
 import { parseForm, getPublicUrl, getField } from '@/lib/api-helpers';
 
 const corsHeaders = {
@@ -19,6 +19,11 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const isAuthorized = await validateClientRequest(request);
+    if (!isAuthorized) {
+        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid client secret' }, { status: 401, headers: corsHeaders });
+    }
+    
     const { fields, files } = await parseForm(request);
 
     const chatId = getField(fields, 'chat_id');
@@ -37,11 +42,6 @@ export async function POST(request: Request) {
     // Ensure the email from the form matches the chat owner for auth
     if (chat.customer.email !== email) {
          return NextResponse.json({ status: 'error', message: 'Email does not match chat owner' }, { status: 403, headers: corsHeaders });
-    }
-
-    const isAuthorized = await validateHmac(request, email);
-    if (!isAuthorized) {
-        return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid HMAC signature' }, { status: 401, headers: corsHeaders });
     }
 
     const imageUrl = getPublicUrl(files.image);
