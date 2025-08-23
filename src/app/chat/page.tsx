@@ -357,20 +357,10 @@ function ChatPageContent({ chatId }: { chatId: string | null }) {
   const router = useRouter();
   const [allChats, setAllChats] = useState(() => getActiveChats());
   
-  // This effect will poll for new chat messages.
   useEffect(() => {
-    const interval = setInterval(() => {
-      const activeChats = getActiveChats();
-       setAllChats(prevChats => {
-        // A simple check to see if we need to re-render.
-        if(JSON.stringify(prevChats) !== JSON.stringify(activeChats)) {
-          return activeChats;
-        }
-        return prevChats;
-       });
-    }, 2000); // Poll for new chats every 2 seconds
-    return () => clearInterval(interval);
-  }, []);
+    const activeChats = getActiveChats();
+    setAllChats(activeChats);
+  }, [chatId]);
 
   const selectedChat = useMemo(() => {
     // If no chatId, or if the chatId from the URL isn't in our active chats, return null.

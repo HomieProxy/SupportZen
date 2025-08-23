@@ -35,17 +35,13 @@ export default function Dashboard() {
   const [logCount, setLogCount] = useState(0);
   
   // This effect will re-fetch data if the user navigates away and back,
-  // ensuring the dashboard is up-to-date. A more robust solution might
-  // use a global state manager.
+  // ensuring the dashboard is up-to-date.
   useEffect(() => {
-    const interval = setInterval(() => {
-        setActiveChats(getActiveChats());
-        setOpenTickets(getOpenTickets());
-        setAllTickets(getTickets());
-        setAllChats(getChatSessions());
-        getLogsCount().then(setLogCount);
-    }, 1000); // Check for updates every second
-    return () => clearInterval(interval);
+    setActiveChats(getActiveChats());
+    setOpenTickets(getOpenTickets());
+    setAllTickets(getTickets());
+    setAllChats(getChatSessions());
+    getLogsCount().then(setLogCount);
   }, []);
 
 
