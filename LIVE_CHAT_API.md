@@ -27,6 +27,7 @@ This endpoint initiates a new chat session. It should be called only when the us
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `email` | string | Yes | The user's email address. |
+| `uuid` | string | Yes | The user's unique identifier (e.g., a database ID). Required for security. |
 | `name` | string | No | The user's name or current plan name (e.g., "Basic Plan"). |
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
@@ -40,6 +41,7 @@ curl -X POST \
   https://support.msdnoff365.tk/api/client/live/create \
   -H 'Authorization: Bearer <YOUR_SHARED_SECRET_KEY>' \
   -F 'email=user@example.com' \
+  -F 'uuid=user-db-id-12345' \
   -F 'name=Premium Plan' \
   -F 'plan_id=5' \
   -F 'created_at=1679223400' \
