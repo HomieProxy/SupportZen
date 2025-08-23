@@ -4,13 +4,7 @@ import formidable, { type File } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
-
-// Disable the default body parser for these routes
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+import { Readable } from 'stream';
 
 // Ensure the upload directory exists
 const uploadDir = path.join(process.cwd(), 'public', 'uploads');
@@ -23,7 +17,30 @@ interface ParsedForm {
   files: formidable.Files;
 }
 
+// Helper to convert NextRequest to a Node.js Readable stream
+function requestToStream(req: NextRequest): Readable {
+  const reader = req.body?.getReader();
+  if (!reader) {
+    throw new Error('Request body is not available');
+  }
+
+  return new Readable({
+    async read() {
+      const { done, value } = await reader.read();
+      if (done) {
+        this.push(null);
+      } else {
+        this.push(value);
+      }
+    }
+  });
+}
+
+
 export async function parseForm(req: NextRequest): Promise<ParsedForm> {
+    const stream = requestToStream(req);
+    const headers = Object.fromEntries(req.headers.entries());
+
     return new Promise((resolve, reject) => {
         const form = formidable({
             uploadDir,
@@ -33,7 +50,7 @@ export async function parseForm(req: NextRequest): Promise<ParsedForm> {
             },
         });
         
-        form.parse(req as any, (err, fields, files) => {
+        form.parse({ req: stream, ...headers }, (err, fields, files) => {
             if (err) reject(err);
             else resolve({ fields, files });
         });
