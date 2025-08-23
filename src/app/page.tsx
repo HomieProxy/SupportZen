@@ -18,28 +18,36 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getActiveChats, getOpenTickets, getTickets, getChatSessions, getLogsCount } from '@/lib/data';
-import { Ticket } from '@/types';
+import { Ticket, ChatSession as ChatSessionType } from '@/types';
 import { MessageSquare, Ticket as TicketIcon, Users, ShieldQuestion } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
 
+interface DashboardStats {
+    totalTickets: number;
+    openTicketsCount: number;
+    totalChats: number;
+    activeChatsCount: number;
+    logCount: number;
+    recentOpenTickets: Ticket[];
+    activeChats: ChatSessionType[];
+}
+
 export default function Dashboard() {
-  const [allTickets, setAllTickets] = useState(getTickets());
-  const [allChats, setAllChats] = useState(getChatSessions());
-  const [activeChats, setActiveChats] = useState(getActiveChats());
-  const [openTickets, setOpenTickets] = useState(getOpenTickets());
-  const [logCount, setLogCount] = useState(0);
-  
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
   useEffect(() => {
-    const fetchData = () => {
-        setActiveChats(getActiveChats());
-        setOpenTickets(getOpenTickets());
-        setAllTickets(getTickets());
-        setAllChats(getChatSessions());
-        getLogsCount().then(setLogCount);
+    const fetchData = async () => {
+        try {
+            const res = await fetch('/api/admin/dashboard');
+            if(res.ok) {
+                const data = await res.json();
+                setStats(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch dashboard stats:", error);
+        }
     }
     
     fetchData(); // Initial fetch
@@ -47,9 +55,6 @@ export default function Dashboard() {
 
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
-
-
-  const recentTickets = openTickets.slice(0, 5);
 
   const getInitials = (name: string) => {
     return name
@@ -71,6 +76,17 @@ export default function Dashboard() {
     }
   };
 
+  if (!stats) {
+    return (
+       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <h2 className="text-3xl font-bold tracking-tight font-headline">
+            Dashboard
+        </h2>
+        <p>Loading dashboard...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight font-headline">
@@ -84,7 +100,7 @@ export default function Dashboard() {
               <TicketIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{allTickets.length}</div>
+              <div className="text-2xl font-bold">{stats.totalTickets}</div>
               <p className="text-xs text-muted-foreground">
                 All tickets ever created
               </p>
@@ -98,7 +114,7 @@ export default function Dashboard() {
                 <TicketIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{openTickets.length}</div>
+                <div className="text-2xl font-bold">{stats.openTicketsCount}</div>
                 <p className="text-xs text-muted-foreground">
                 Tickets needing attention
                 </p>
@@ -111,7 +127,7 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{allChats.length}</div>
+            <div className="text-2xl font-bold">{stats.totalChats}</div>
             <p className="text-xs text-muted-foreground">
               All chat sessions initiated
             </p>
@@ -123,7 +139,7 @@ export default function Dashboard() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeChats.length}</div>
+            <div className="text-2xl font-bold">{stats.activeChatsCount}</div>
             <p className="text-xs text-muted-foreground">
               Live conversations right now
             </p>
@@ -136,7 +152,7 @@ export default function Dashboard() {
                 <ShieldQuestion className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{logCount}</div>
+                <div className="text-2xl font-bold">{stats.logCount}</div>
                 <p className="text-xs text-muted-foreground">
                 Total entries logged
                 </p>
@@ -163,7 +179,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentTickets.map((ticket) => (
+                {stats.recentOpenTickets.map((ticket) => (
                   <TableRow key={ticket.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -202,7 +218,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activeChats.map((chat) => (
+              {stats.activeChats.map((chat) => (
                 <div key={chat.id} className="flex items-center">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={chat.customer.avatarUrl} alt={chat.customer.name} />

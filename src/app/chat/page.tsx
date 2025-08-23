@@ -4,13 +4,7 @@
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  getActiveChats,
-  getChatById,
-  addMessageToChat,
-  addTicket,
-  closeChat,
-} from '@/lib/data';
+import { getChatById, addMessageToChat, addTicket, closeChat } from '@/lib/data';
 import { ChatSession, ChatMessage, User } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -38,7 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ImageAnnotator } from '@/components/image-annotator';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 function ChatList({
   chats,
@@ -63,6 +57,11 @@ function ChatList({
         </Button>
       </CardHeader>
       <ScrollArea className="flex-1">
+        {chats.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+                No active chats.
+            </div>
+        )}
         {chats.map((chat) => (
           <div
             key={chat.id}
@@ -355,37 +354,47 @@ function ChatWindow({ chat, onChatClose }: { chat: ChatSession, onChatClose: (id
 
 function ChatPageContent({ chatId }: { chatId: string | null }) {
   const router = useRouter();
-  const [allChats, setAllChats] = useState(() => getActiveChats());
+  const [allChats, setAllChats] = useState<ChatSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const fetchData = () => {
-        const activeChats = getActiveChats();
-        setAllChats(activeChats);
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/admin/chats');
+            if(res.ok) {
+                const data = await res.json();
+                setAllChats(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch active chats", error);
+        } finally {
+            setIsLoading(false);
+        }
     }
     fetchData(); // Initial fetch
     const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
 
     return () => clearInterval(interval); // Cleanup on unmount
-  }, [chatId]);
+  }, []);
 
   const selectedChat = useMemo(() => {
-    // If no chatId, or if the chatId from the URL isn't in our active chats, return null.
     if (!chatId || !allChats.some(c => c.id === chatId)) {
         return null;
     }
-    return getChatById(chatId);
+    // Note: getChatById is still reading from the stale in-memory data on the client.
+    // We need to use the data we just fetched.
+    return allChats.find(c => c.id === chatId) || null;
   }, [chatId, allChats]);
   
   const handleSelectChat = (id: string) => {
-    // Navigate to the new chat URL without a full page reload.
     router.push(`/chat?id=${id}`, { scroll: false });
   }
 
   const handleChatClose = (closedChatId: string) => {
-    const updatedChats = getActiveChats();
+    const updatedChats = allChats.filter(c => c.id !== closedChatId);
     setAllChats(updatedChats);
 
-    // If the closed chat was the one being viewed
     if (chatId === closedChatId) {
         if (updatedChats.length > 0) {
             const newId = updatedChats[0].id;
@@ -405,12 +414,16 @@ function ChatPageContent({ chatId }: { chatId: string | null }) {
         />
         <Separator orientation="vertical" />
         <div className="flex-1 p-4">
-            {selectedChat ? (
-            <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
+            {isLoading && !selectedChat ? (
+                <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Loading chats...</p>
+                </div>
+            ) : selectedChat ? (
+                <ChatWindow chat={selectedChat} onChatClose={handleChatClose} />
             ) : (
-            <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">{ allChats.length > 0 ? "Select a conversation to start chatting" : "No active conversations"}</p>
-            </div>
+                <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Select a conversation to start chatting</p>
+                </div>
             )}
         </div>
     </div>

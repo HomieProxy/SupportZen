@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getTickets } from '@/lib/data';
 import { Ticket } from '@/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -30,9 +29,28 @@ import { ListFilter, ArrowLeft } from 'lucide-react';
 type Status = Ticket['status'] | 'all';
 
 export default function TicketsPage() {
-  const allTickets = useMemo(() => getTickets(), []);
+  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status>('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTickets() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/admin/tickets');
+        if (res.ok) {
+          const data = await res.json();
+          setAllTickets(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch tickets", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTickets();
+  }, []);
 
   const filteredTickets = useMemo(() => {
     return allTickets
@@ -115,7 +133,13 @@ export default function TicketsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTickets.length > 0 ? (
+            {isLoading ? (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        Loading tickets...
+                    </TableCell>
+                </TableRow>
+            ) : filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => (
                 <TableRow key={ticket.id}>
                   <TableCell>
