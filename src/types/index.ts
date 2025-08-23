@@ -3,7 +3,6 @@ export interface User {
   auth_token: string;
   name: string;
   email: string;
-  uuid: string; // Add uuid for HMAC
   avatarUrl: string;
   planId: string;
   expiredAt: string;
@@ -42,7 +41,6 @@ export interface ChatSession {
 export interface ClientWebhookPayload {
   // User information
   email: string;
-  uuid: string; // Add uuid for HMAC
   name?: string;
   created_at: number;
   expired_at?: number | null;

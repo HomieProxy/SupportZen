@@ -4,10 +4,12 @@ This document specifies the API for the ticket management service, designed to b
 
 ## Authentication
 
-All requests to the Ticket API must be authenticated using a Bearer token sent in the `Authorization` header. This token is a pre-shared secret key that validates the client's request.
+All requests to the Ticket API must be authenticated. The `Authorization` header must contain a Bearer token which is an HMAC-SHA256 hash.
+
+The hash is generated from the user's `email` and a pre-shared secret key.
 
 **Example Header:**
-`Authorization: Bearer <YOUR_SHARED_SECRET_KEY>`
+`Authorization: Bearer <HMAC_SHA256(email, YOUR_SHARED_SECRET_KEY)>`
 
 ---
 
@@ -25,8 +27,7 @@ This endpoint creates a new support ticket.
 #### Request Form Data
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `email` | string | Yes | The user's email address. |
-| `uuid` | string | Yes | The user's unique identifier (e.g., a database ID). Required for security. |
+| `email` | string | Yes | The user's email address. Used for HMAC generation. |
 | `name` | string | No | The user's name or current plan name (e.g., "Basic Plan"). |
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
@@ -38,9 +39,8 @@ This endpoint creates a new support ticket.
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/create \
-  -H 'Authorization: Bearer <YOUR_SHARED_SECRET_KEY>' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>' \
   -F 'email=user@example.com' \
-  -F 'uuid=user-db-id-12345' \
   -F 'name=Premium Plan' \
   -F 'plan_id=5' \
   -F 'created_at=1679223400' \
@@ -75,7 +75,7 @@ This endpoint adds a new message from the customer to an existing ticket.
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `ticket_id` | string | Yes | The ID of the ticket to append the message to. |
-| `email` | string | Yes | The user's email, used for request validation. |
+| `email` | string | Yes | The user's email, used for request validation and HMAC generation. |
 | `message` | string | Yes | The content of the message. |
 | `image`| file | No | An optional image file to be attached. |
 
@@ -84,7 +84,7 @@ This endpoint adds a new message from the customer to an existing ticket.
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/ticket/append \
-  -H 'Authorization: Bearer <YOUR_SHARED_SECRET_KEY>' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>' \
   -F 'ticket_id=TKT-001' \
   -F 'email=user@example.com' \
   -F 'message=I\'ve tried resetting my password, but it didn\'t work.' \

@@ -59,10 +59,9 @@ export async function logout() {
  * Validates an incoming request by comparing its HMAC signature with a newly generated one.
  * @param request The incoming Request object.
  * @param email The email of the user making the request.
- * @param uuid The user's unique identifier.
  * @returns A boolean indicating if the request is authorized.
  */
-export async function validateHmac(request: Request, email: string, uuid: string): Promise<boolean> {
+export async function validateHmac(request: Request, email: string): Promise<boolean> {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         console.error("Validation failed: Missing or malformed Authorization header.");
@@ -77,8 +76,7 @@ export async function validateHmac(request: Request, email: string, uuid: string
 
     // Re-create the HMAC on the server
     const secret = getSharedSecret();
-    const data = `${email}${uuid}`;
-    const serverHmac = crypto.createHmac('sha256', secret).update(data).digest('hex');
+    const serverHmac = crypto.createHmac('sha256', secret).update(email).digest('hex');
 
     try {
         // Use timingSafeEqual to prevent timing attacks

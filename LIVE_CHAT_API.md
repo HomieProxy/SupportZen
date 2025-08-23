@@ -4,10 +4,12 @@ This document specifies the API for the stateful live chat service, designed to 
 
 ## Authentication
 
-All requests to the Live Chat API must be authenticated using a Bearer token sent in the `Authorization` header. This token is a pre-shared secret key that validates the client's request.
+All requests to the Live Chat API must be authenticated. The `Authorization` header must contain a Bearer token which is an HMAC-SHA256 hash.
+
+The hash is generated from the user's `email` and a pre-shared secret key.
 
 **Example Header:**
-`Authorization: Bearer <YOUR_SHARED_SECRET_KEY>`
+`Authorization: Bearer <HMAC_SHA256(email, YOUR_SHARED_SECRET_KEY)>`
 
 ---
 
@@ -26,8 +28,7 @@ This endpoint initiates a new chat session. It should be called only when the us
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `email` | string | Yes | The user's email address. |
-| `uuid` | string | Yes | The user's unique identifier (e.g., a database ID). Required for security. |
+| `email` | string | Yes | The user's email address. Used for HMAC generation. |
 | `name` | string | No | The user's name or current plan name (e.g., "Basic Plan"). |
 | `plan_id` | number | No | The user's current subscription plan ID. |
 | `created_at` | number | Yes | The user's account creation timestamp. |
@@ -39,9 +40,8 @@ This endpoint initiates a new chat session. It should be called only when the us
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/create \
-  -H 'Authorization: Bearer <YOUR_SHARED_SECRET_KEY>' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>' \
   -F 'email=user@example.com' \
-  -F 'uuid=user-db-id-12345' \
   -F 'name=Premium Plan' \
   -F 'plan_id=5' \
   -F 'created_at=1679223400' \
@@ -76,7 +76,7 @@ This endpoint is used to send all subsequent messages after a chat session has b
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `chat_id` | string | Yes | The ID of the active chat session (obtained from the `/create` endpoint). |
-| `email` | string | Yes | The user's email, used for request validation. |
+| `email` | string | Yes | The user's email, used for request validation and HMAC generation. |
 | `message` | string | Yes | The content of the chat message. |
 | `image`| file | No | An optional image file to be attached. |
 
@@ -85,7 +85,7 @@ This endpoint is used to send all subsequent messages after a chat session has b
 ```bash
 curl -X POST \
   https://support.msdnoff365.tk/api/client/live/chat \
-  -H 'Authorization: Bearer <YOUR_SHARED_SECRET_KEY>' \
+  -H 'Authorization: Bearer <YOUR_GENERATED_HMAC_HASH>' \
   -F 'chat_id=chat-session-xyz-123' \
   -F 'email=user@example.com' \
   -F 'message=Where can I find my subscription URL?' \

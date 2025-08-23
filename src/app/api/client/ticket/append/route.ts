@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Now validate the HMAC signature
-    const isAuthorized = await validateHmac(request, ticket.customer.email, ticket.customer.uuid);
+    const isAuthorized = await validateHmac(request, email);
     if (!isAuthorized) {
         return NextResponse.json({ status: 'error', message: 'Unauthorized: Invalid signature' }, { status: 401, headers: corsHeaders });
     }
